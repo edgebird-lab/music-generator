@@ -17,7 +17,8 @@ const fmtShort = (s) => `${Math.floor(s / 60)}:${String(Math.floor(s % 60)).padS
 
 const VOCAL_KINDS = ["vocals", "take", "recording", "converted"];
 const RATE = 48000, ROW = 88, RULER = 28, HANDLE = 7, SNAP_PX = 8, PEAK_HOP = 128, MIN_CLIP = 0.02;
-const COLORS = { song: "#6d8cff", vocals: "#d1a75c", take: "#7fbf7f", recording: "#e0708c", converted: "#c58af9", instrumental: "#5b9bd5", drums: "#d9705f", bass: "#a07fd0", other: "#4fb3a5" };
+// Sechsstellige Hex-Werte (es werden Alpha-Endungen angehängt); kein Gold, das ist die Farbe von Auswahl und Abspielkopf
+const COLORS = { song: "#7f9cf5", vocals: "#ff8fb8", take: "#ffa07a", recording: "#ff6b8a", converted: "#c48bff", instrumental: "#4fc3e8", drums: "#a3e635", bass: "#8d7bff", other: "#8fb7c9" };
 
 let project = null;              // { id, name, data: { bpm, tracks: [], clips: [], lyrics } }
 const media = new Map();         // Medien-ID -> { meta, buffer, peaks, loading }
@@ -434,12 +435,12 @@ function draw() {
   const c2 = g2d;
   c2.setTransform(dpr, 0, 0, dpr, 0, 0);
   c2.clearRect(0, 0, W, H);
-  c2.font = "11px -apple-system, 'Segoe UI', sans-serif";
+  c2.font = "11px 'JetBrains Mono', 'SF Mono', Menlo, ui-monospace, monospace";
 
   // Zeilen der Spuren
   tracks().forEach((tr, i) => {
     const y = RULER + i * ROW - sy;
-    if (tr.id === selTrack) { c2.fillStyle = "rgba(109,140,255,.05)"; c2.fillRect(0, y, W, ROW); }
+    if (tr.id === selTrack) { c2.fillStyle = "rgba(127,212,255,.05)"; c2.fillRect(0, y, W, ROW); }
     c2.fillStyle = cssVar("--border");
     c2.fillRect(0, y + ROW - 1, W, 1);
   });
@@ -467,7 +468,7 @@ function draw() {
   // Markierter Bereich
   if (range) {
     const a = x0(range.start), b = x0(range.end);
-    c2.fillStyle = "rgba(209,167,92,.1)";
+    c2.fillStyle = "rgba(224,181,107,.1)";
     c2.fillRect(a, 0, b - a, H);
     c2.fillStyle = cssVar("--accent2");
     c2.fillRect(a, 0, 1, H); c2.fillRect(b, 0, 1, H);
@@ -477,7 +478,7 @@ function draw() {
   c2.fillRect(0, 0, W, RULER);
   c2.fillStyle = cssVar("--border");
   c2.fillRect(0, RULER - 1, W, 1);
-  if (range) { c2.fillStyle = "rgba(209,167,92,.35)"; c2.fillRect(x0(range.start), 0, (range.end - range.start) * pxPerSec, RULER - 1); }
+  if (range) { c2.fillStyle = "rgba(224,181,107,.35)"; c2.fillRect(x0(range.start), 0, (range.end - range.start) * pxPerSec, RULER - 1); }
   let major = 1;
   for (const s of [1, 2, 5, 10, 15, 30, 60, 120, 300]) { major = s; if (s * pxPerSec >= 70) break; }
   c2.fillStyle = cssVar("--muted");
@@ -525,7 +526,7 @@ function drawClip(c, x, y, w, h) {
   if (w > 30) {
     c2.save();
     c2.beginPath(); c2.rect(x + 2, y, w - 4, 16); c2.clip();
-    c2.fillStyle = "#fff";
+    c2.fillStyle = "#f2f5fa";
     c2.textBaseline = "middle";
     c2.fillText(c.name || m?.meta?.name || "", Math.max(x, 0) + 6, y + 9);
     c2.restore();
@@ -559,7 +560,7 @@ function drawNav(now = playing ? currentTime() : playhead) {
     g.fillStyle = `${COLORS[media.get(c.asset)?.meta?.kind] || COLORS.song}b0`;
     g.fillRect(x(c.start), 5 + i * rowH, Math.max(1, x(c.length)), Math.max(1, rowH - 1));
   }
-  if (range) { g.fillStyle = "rgba(209,167,92,.18)"; g.fillRect(x(range.start), 0, x(range.end) - x(range.start), H); }
+  if (range) { g.fillStyle = "rgba(224,181,107,.18)"; g.fillRect(x(range.start), 0, x(range.end) - x(range.start), H); }
   // sichtbarer Ausschnitt
   const a = x(scroller.scrollLeft / pxPerSec), b = Math.min(W, x((scroller.scrollLeft + scroller.clientWidth) / pxPerSec));
   g.fillStyle = "rgba(255,255,255,.06)"; g.fillRect(a, 0, Math.max(2, b - a), H);

@@ -85,8 +85,9 @@ def _latest_release(lang: str) -> dict:
         r = httpx.get(API_LATEST, timeout=15, headers={"Accept": "application/vnd.github+json", "User-Agent": "music-generator-updater"})
         if r.status_code == 200:
             d = r.json()
-            if d.get("tag_name"):
-                return {"tag": d["tag_name"], "name": d.get("name") or d["tag_name"], "notes": d.get("body") or "", "url": d.get("html_url") or REPO_WEB}
+            tag = str(d.get("tag_name") or "")
+            if re.fullmatch(r"v?\d+(\.\d+)*", tag):   # Engine-Vorabreleases (engine-*) sind keine App-Versionen
+                return {"tag": tag, "name": d.get("name") or tag, "notes": d.get("body") or "", "url": d.get("html_url") or REPO_WEB}
         if r.status_code == 404:
             raise RuntimeError(tr(lang, "no_release"))
     except httpx.HTTPError:
