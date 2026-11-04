@@ -1,0 +1,256 @@
+{
+  "families": [
+    {
+      "name": "Pop",
+      "guide": "Strophen mit 6-8 Zeilen von 6-10 Silben. Alltagssprache, die sich mitsingen lässt. Der Titel steht im Refrain.",
+      "structure": ["Intro", "Verse 1", "Pre-Chorus", "Chorus", "Verse 2", "Pre-Chorus", "Chorus", "Bridge", "Chorus", "Outro"],
+      "genres": [
+        {"name": "Mainstream-Pop", "guide": "Klare Kernaussage, die man nach einmal Hören kennt. Refrain mit großer, einfacher Melodielinie."},
+        {"name": "Dance-Pop", "guide": "Kurze, rhythmische Zeilen für den Club. Der Post-Chorus ist der eigentliche Ohrwurm und darf aus wiederholten Wörtern oder Silben bestehen.",
+         "structure": ["Intro", "Verse 1", "Pre-Chorus", "Chorus", "Post-Chorus", "Verse 2", "Pre-Chorus", "Chorus", "Post-Chorus", "Bridge", "Chorus", "Post-Chorus", "Outro"]},
+        {"name": "Deutschpop", "guide": "Poetischer Alltag: Bilder aus deutschen Städten, Küchen und Autobahnen, gesprochen klingende Sätze statt Kunstsprache."},
+        {"name": "Synth-Pop", "guide": "80er-Kühle: Nacht, Neon, Distanz, Maschinen. Knappe Zeilen mit viel Luft."},
+        {"name": "Electropop", "guide": "Selbstbewusst, verspielt und körperlich. Moderne Club-Sprache und kurze Slogans."},
+        {"name": "Indie-Pop", "guide": "Schräge Beobachtungen, lakonischer Humor, unperfekte Reime, die absichtlich nach Tagebuch klingen."},
+        {"name": "Dream Pop", "guide": "Verschwommene, fragmentarische Bilder, wenig Handlung, viel Stimmung, lange Vokale."},
+        {"name": "K-Pop", "guide": "Schneller Wechsel aus Gesang und kurzem Rap-Part, plakative Hook mit englischen Einsprengseln, Dance Break.",
+         "structure": ["Intro", "Verse 1", "Pre-Chorus", "Chorus", "Rap Verse", "Pre-Chorus", "Chorus", "Dance Break", "Bridge", "Chorus", "Outro"]},
+        {"name": "Hyperpop", "guide": "Überdreht und digital: Internet-Slang, absurde Wiederholungen, gepitchte Stimme, Selbstironie und Zusammenbruch im selben Satz."},
+        {"name": "Neue Deutsche Welle", "guide": "Naiv-absurde Alltagstexte, Dada-Humor, kurze Stakkato-Sätze, banale Gegenstände werden zu Slogans."},
+        {"name": "Power-Ballade", "guide": "Große Gefühle und lange Zeilen. Jede Wiederholung des Refrains steigert sich, das Finale ist der Höhepunkt."}
+      ]
+    },
+    {
+      "name": "Rap & Hip-Hop",
+      "guide": "Verse als Bars: eine Zeile pro Takt, genau 16 Zeilen pro Verse, 4-8 Zeilen Hook. Jede Zeile endet auf einen Reim, dazu Binnenreime und mehrsilbige Reime. Flow geht vor Grammatik, Slang ist erlaubt. Ad-Libs sparsam in Klammern, nicht in jeder Zeile und nie als Echo des letzten Wortes.",
+      "structure": ["Intro", "Verse 1", "Hook", "Verse 2", "Hook", "Verse 3", "Hook", "Outro"],
+      "genres": [
+        {"name": "Deutschrap", "guide": "Bilder aus deutschen Städten und Milieus, Punchlines am Zeilenende, Doppelreime über mehrere Silben."},
+        {"name": "Straßenrap", "guide": "Block, Hustle, Knast, Familie, Loyalität. Ungeschönte Milieu-Erzählung mit konkreten Orten und Details, harter Slang."},
+        {"name": "Gangsta Rap", "guide": "Erzählung aus der Perspektive einer Gangsterfigur: Status, Drohung, Verrat und Gewalt, breitbeinig und selbstverliebt."},
+        {"name": "Battle Rap", "guide": "Jede Zeile ist ein Angriff, direkte Anrede. Setup und Punchline, Wortspiele, Vergleiche, Doppeldeutigkeiten. Beleidigung als Sportart."},
+        {"name": "Diss Track", "guide": "Gezielter Angriff auf die Person aus dem Thema: persönliche Details, Steigerung von Spott zu Vernichtung, die letzte Zeile ist der Todesstoß."},
+        {"name": "Conscious Rap", "guide": "Gesellschaftskritik mit Haltung, präzise Beobachtungen statt Parolen, dichte Binnenreime, unbequeme Fragen."},
+        {"name": "Boom Bap", "guide": "90er-Schule: Reimketten über mehrere Zeilen, Storytelling, Kopfnicker-Takt. Die Hook darf aus Scratch-artigen Wiederholungen bestehen."},
+        {"name": "Trap", "guide": "Triplet-Flow, kurze Zeilen, stark repetitive Hook, Statements statt Geschichten."},
+        {"name": "Drill", "guide": "Kalt und gleitend, düstere Block-Bilder, Slang, Drohung im ruhigen Ton, kurze abgehackte Phrasen."},
+        {"name": "Cloud Rap", "guide": "Verschwommen und melancholisch, Autotune-Zeilen mit viel Luft, Assoziationen statt Handlung, Rausch und Leere."},
+        {"name": "Emo Rap", "guide": "Schonungslos verletzlich: Depression, Absturz, toxische Liebe. Gesungene Hook, Tagebuchton."},
+        {"name": "Melodic Rap", "guide": "Halb gesungen, halb gerappt, Autotune, eingängige Hook. Liebe, Erfolg und Misstrauen."},
+        {"name": "Horrorcore", "guide": "Splatter-Erzählung wie ein Horrorfilm, groteske Detailbilder, schwarzer Humor, irrer Erzähler."},
+        {"name": "Porno-Rap", "guide": "Überzeichnete sexuelle Angeberei zwischen Erwachsenen, vulgärer Wortwitz, Comic-Übertreibung."},
+        {"name": "Party Rap", "guide": "Club, Feiern, Größenwahn, Mitrufer und Call-and-Response. Einfacher, federnder Flow."},
+        {"name": "Grime", "guide": "Schneller 140-BPM-Flow mit kurzen, abgehackten Reimsalven, rotzige Attitüde, Reload-Zeilen."}
+      ]
+    },
+    {
+      "name": "Rock",
+      "guide": "Direkte Sprache, Strophen mit 6-8 Zeilen, die dem Riff folgen, Refrain zum Mitsingen oder Mitgrölen.",
+      "structure": ["Intro", "Verse 1", "Chorus", "Verse 2", "Chorus", "Guitar Solo", "Bridge", "Chorus", "Outro"],
+      "genres": [
+        {"name": "Classic Rock", "guide": "Freiheit, Straße, Liebe und Rausch, große Gesten, Blues-Phrasierung, hymnischer Refrain."},
+        {"name": "Hard Rock", "guide": "Riff-getrieben und großspurig: Sex, Rausch, Prahlerei, Refrain als Schlachtruf."},
+        {"name": "Alternative Rock", "guide": "Innere Zerrissenheit, schräge Metaphern, Wechsel aus leiser Strophe und lautem Refrain."},
+        {"name": "Indie Rock", "guide": "Lakonischer Anti-Held, genaue Beobachtung, trockene Ironie. Der Refrain darf nur ein Satz sein."},
+        {"name": "Grunge", "guide": "Apathie, Selbsthass, kaputte Bilder, gepresste Strophe, geschriener Refrain mit wenigen Worten."},
+        {"name": "Deutschrock", "guide": "Ehrliche, direkte Sprache: Kumpels, Kneipe, Zusammenhalt, gegen die da oben, Refrain für volle Hallen."},
+        {"name": "Stoner Rock", "guide": "Wüste, Rausch, Rauch und Riffs. Mystisch-träge Bilder, wenige langgezogene Zeilen."},
+        {"name": "Psychedelic Rock", "guide": "Surreale, halluzinogene Bilder, Bewusstseinsstrom, Zeit und Raum zerfließen."},
+        {"name": "Glam Rock", "guide": "Überdreht, sexy, androgyn, Glitzer und Größenwahn, Refrain zum Klatschen."},
+        {"name": "Gothic Rock", "guide": "Romantik und Tod, Friedhofsästhetik, sakrale Bilder, tiefe dramatische Stimme."},
+        {"name": "Mittelalter-Rock", "guide": "Altertümelnde Sprache, Spielleute, Trinken, Hexen und Scheiterhaufen, Dudelsack-Refrain zum Mitgrölen."},
+        {"name": "Rockballade", "guide": "Erst leise und verletzlich, dann groß. Gitarrensolo nach dem zweiten Refrain, der Schlussrefrain ist der Höhepunkt."}
+      ]
+    },
+    {
+      "name": "Punk & Hardcore",
+      "guide": "Kurz und rotzig: 4-6 kurze Zeilen pro Strophe, Refrain aus Parolen, keine Politur.",
+      "structure": ["Verse 1", "Chorus", "Verse 2", "Chorus", "Bridge", "Chorus"],
+      "genres": [
+        {"name": "Punk Rock", "guide": "Drei Akkorde gegen Autorität, Spießer und Langeweile. Parolen, die man nach dem ersten Refrain mitbrüllt."},
+        {"name": "Deutschpunk", "guide": "Politisch und asozial-humorvoll: Staat, Bullen, Bier, Nachbarn. Schwarzer Humor, direkte Anrede, einfache Reime."},
+        {"name": "Hardcore Punk", "guide": "Extrem kurz. Gebrüllte Parolen, Gang-Shouts in Klammern, kein Platz für Metaphern.",
+         "structure": ["Verse 1", "Chorus", "Verse 2", "Chorus", "Breakdown", "Chorus"]},
+        {"name": "Pop-Punk", "guide": "Teenager-Frust, Selbstironie, Vorstadt, Ex-Beziehungen. Hoher, melodischer Refrain, rotzige Strophen."},
+        {"name": "Emo", "guide": "Tagebuch-Offenbarung, Verzweiflung, konkrete Beziehungsdetails, am Ende wird geschrien."},
+        {"name": "Post-Punk", "guide": "Monoton und kalt: Stadt, Entfremdung, Arbeit. Kurze Feststellungen statt Gefühlsausbrüche."},
+        {"name": "Ska-Punk", "guide": "Gute Laune trifft Wut, Offbeat-Phrasierung, Bläserparts in Klammern, Refrain zum Springen."},
+        {"name": "Riot Grrrl", "guide": "Feministische Wut, gebrüllt, direkte Anklage, Spott über Machos."}
+      ]
+    },
+    {
+      "name": "Metal",
+      "guide": "Wuchtige, bildstarke Sprache. Harte Konsonanten und kurze Wörter für gegrowlte oder geschriene Parts, Bilder statt Alltagssprache.",
+      "structure": ["Intro", "Verse 1", "Pre-Chorus", "Chorus", "Verse 2", "Pre-Chorus", "Chorus", "Guitar Solo", "Bridge", "Chorus", "Outro"],
+      "genres": [
+        {"name": "Heavy Metal", "guide": "Epik, Stahl, Schlacht und Freiheit, klare hohe Stimme, hymnischer Refrain mit erhobener Faust."},
+        {"name": "Thrash Metal", "guide": "Atemlose, gebellte Zeilen. Krieg, Politik, Wut. Gang-Shouts in Klammern, Breakdown vor dem Solo.",
+         "structure": ["Intro", "Verse 1", "Pre-Chorus", "Chorus", "Verse 2", "Pre-Chorus", "Chorus", "Breakdown", "Guitar Solo", "Chorus", "Outro"]},
+        {"name": "Death Metal", "guide": "Verwesung, Anatomie, Krieg und Tod in blutigen Detailbildern. Für Growls gebaut: kurze, wuchtige Wörter, der Refrain ist oft nur ein Satz."},
+        {"name": "Black Metal", "guide": "Misanthropie, Winter, Nacht, Blasphemie und Natur. Archaische, beschwörende Sprache, gekreischt."},
+        {"name": "Doom Metal", "guide": "Quälend langsam: wenige lange Zeilen, Verzweiflung, Schwere, Grabesbilder, Wiederholung als Last."},
+        {"name": "Power Metal", "guide": "Drachen, Helden, Schwerter und Schicksal. Hohe Melodien, Pathos ohne Ironie, gigantischer Refrain."},
+        {"name": "Symphonic Metal", "guide": "Bombast, Mythen und Tragödie. Wechselgesang und Chorzeilen in Klammern, opernhafter Refrain."},
+        {"name": "Folk- & Viking Metal", "guide": "Nordische Mythen, Schlachtrufe, Met und Ahnen, Refrain für den Chor der Krieger."},
+        {"name": "Melodic Death Metal", "guide": "Growls über Melodien: Verlust und Vergänglichkeit in poetischen Bildern, schwermütiger Refrain."},
+        {"name": "Metalcore", "guide": "Geschriene Strophen, clean gesungener Refrain, Breakdown mit einer Zeile zum Mitschreien. Seelischer Schmerz wird zu Wut.",
+         "structure": ["Intro", "Verse 1", "Pre-Chorus", "Chorus", "Verse 2", "Pre-Chorus", "Chorus", "Breakdown", "Bridge", "Chorus", "Outro"]},
+        {"name": "Deathcore", "guide": "Maximal brutal: Nihilismus und Menschenhass, Breakdowns mit extrem kurzen Zeilen, tiefe Growls.",
+         "structure": ["Intro", "Verse 1", "Chorus", "Breakdown", "Verse 2", "Chorus", "Breakdown", "Outro"]},
+        {"name": "Nu Metal", "guide": "Gerappte Strophen, gebrüllter Refrain. Kindheitstrauma, Verrat, Selbsthass. Geflüster schlägt in Schreien um.",
+         "structure": ["Intro", "Verse 1", "Pre-Chorus", "Chorus", "Verse 2", "Pre-Chorus", "Chorus", "Breakdown", "Chorus", "Outro"]},
+        {"name": "Neue Deutsche Härte", "guide": "Rollendes R, Stakkato-Hauptsätze, Tabubruch und Doppeldeutigkeit, schwarzer Humor im Maschinenrhythmus."},
+        {"name": "Industrial Metal", "guide": "Maschinen, Kontrolle, Entmenschlichung. Befehlston, gesamplete Parolen, mechanische Wiederholung."},
+        {"name": "Groove Metal", "guide": "Stampfendes Midtempo, Stolz und Konfrontation, Parolen im Groove, dicke Breakdowns.",
+         "structure": ["Intro", "Verse 1", "Chorus", "Verse 2", "Chorus", "Breakdown", "Guitar Solo", "Chorus", "Outro"]},
+        {"name": "Progressive Metal", "guide": "Konzeptionell und philosophisch, längere Zeilen, mehrteilige Abschnitte, Wendungen im Text."}
+      ]
+    },
+    {
+      "name": "Elektronisch",
+      "guide": "Wenig Text, viel Wiederholung. Zeilen sind Mantras und Slogans, Vokale tragen über dem Beat.",
+      "structure": ["Intro", "Verse 1", "Build-Up", "Drop", "Verse 2", "Build-Up", "Drop", "Outro"],
+      "genres": [
+        {"name": "EDM", "guide": "Festival-Euphorie. Der Build-Up steigert sich Zeile für Zeile, der Drop besteht nur aus wenigen Worten."},
+        {"name": "House", "guide": "Körper, Nacht und Freiheit. Repetitiver Soul-Refrain, Zeilen als Mantra.",
+         "structure": ["Intro", "Verse 1", "Chorus", "Verse 2", "Chorus", "Interlude", "Chorus", "Outro"]},
+        {"name": "Techno", "guide": "Extrem minimal: monotone Parolen, gesprochene Sätze, Rausch, Maschine, Kontrollverlust.",
+         "structure": ["Intro", "Spoken Word", "Build-Up", "Drop", "Spoken Word", "Drop", "Outro"]},
+        {"name": "Trance", "guide": "Sehnsucht und Erlösung, Himmel und Licht, schwebende Vocal-Linie, riesiges Gefühl im Refrain."},
+        {"name": "Drum & Bass", "guide": "MC-Zeilen im Doppeltempo oder Liquid-Soul-Melodie. Kurz, atemlos, nächtlich."},
+        {"name": "Dubstep", "guide": "Aggressive Ansage vor dem Drop, der Drop kommt fast ohne Text aus, kurze Shouts."},
+        {"name": "Hardstyle", "guide": "Gebrüllte MC-Ansagen, Rave-Gemeinschaft, Härte, Kick. Kurz und plakativ."},
+        {"name": "Eurodance", "guide": "90er-Formel: riesiger gesungener Refrain und kurzer gerappter Part.",
+         "structure": ["Intro", "Rap Verse", "Chorus", "Rap Verse", "Chorus", "Bridge", "Chorus", "Outro"]},
+        {"name": "Synthwave", "guide": "80er-Retrofuturismus: Neon, Highway, Flucht, verlorene Zukunft.",
+         "structure": ["Intro", "Verse 1", "Chorus", "Verse 2", "Chorus", "Instrumental Break", "Chorus", "Outro"]},
+        {"name": "EBM", "guide": "Befehle, Körper, Disziplin. Stakkato und militärische Kälte.",
+         "structure": ["Intro", "Verse 1", "Chorus", "Verse 2", "Chorus", "Breakdown", "Chorus", "Outro"]},
+        {"name": "Dark Wave", "guide": "Melancholie, Kälte und Einsamkeit, tiefe Stimme, monotone Sehnsucht.",
+         "structure": ["Intro", "Verse 1", "Chorus", "Verse 2", "Chorus", "Interlude", "Chorus", "Outro"]}
+      ]
+    },
+    {
+      "name": "R&B, Soul & Funk",
+      "guide": "Phrasierung geht vor Reim: Zeilen mit Platz für Melismen, gefühlvoll und körperlich. Antworten und Verzierungen in Klammern.",
+      "structure": ["Intro", "Verse 1", "Pre-Chorus", "Chorus", "Verse 2", "Pre-Chorus", "Chorus", "Bridge", "Chorus", "Outro"],
+      "genres": [
+        {"name": "R&B", "guide": "Sinnlich und modern: Verlangen, Streit, Versöhnung, Schlafzimmer, direkte Ansprache."},
+        {"name": "Neo-Soul", "guide": "Reif, warm und poetisch, jazzige Phrasierung, Alltag und Intimität."},
+        {"name": "Soul", "guide": "Predigt und Seelenstrip, Call-and-Response, großer Schmerz oder große Freude."},
+        {"name": "Funk", "guide": "Groove zuerst: kurze Rufe, Wiederholung, Prahlen und Körper.",
+         "structure": ["Intro", "Verse 1", "Chorus", "Verse 2", "Chorus", "Breakdown", "Chorus", "Outro"]},
+        {"name": "Disco", "guide": "Tanzfläche als Befreiung, Glitzer, Nacht, riesiger Refrain."},
+        {"name": "Gospel", "guide": "Chor und Vorsänger in Call-and-Response, erhebende Steigerung, biblische Bilder."}
+      ]
+    },
+    {
+      "name": "Blues & Jazz",
+      "guide": "Gesprochene Eleganz, Platz für Pausen und Phrasierung, Pointen statt Pathos.",
+      "structure": ["Intro", "Verse 1", "Chorus", "Verse 2", "Chorus", "Instrumental Break", "Verse 3", "Chorus", "Outro"],
+      "genres": [
+        {"name": "Blues", "guide": "AAB-Schema: Zeile, Wiederholung, Antwort. Whisky, verlorene Liebe, Schulden, schwarzer Humor.",
+         "structure": ["Verse 1", "Verse 2", "Instrumental Break", "Verse 3", "Outro"]},
+        {"name": "Jazz", "guide": "Raffinierte Wortspiele, Bar-Nacht, Swing in den Zeilen, lässige Eleganz."},
+        {"name": "Swing", "guide": "Schnippisch und beschwingt, Wortwitz und Flirt, Big-Band-Refrain."},
+        {"name": "Chanson", "guide": "Erzählerisch, ironisch, melancholisch, Figuren und Szenen wie im Kurzfilm."},
+        {"name": "Kabarett-Song", "guide": "Bissige Pointen und Gesellschaftssatire, jede Strophe endet mit einem Gag."}
+      ]
+    },
+    {
+      "name": "Country & Folk",
+      "guide": "Erzählend: Figuren, Orte und ein Twist. Schlichte, gesprochen klingende Sprache.",
+      "structure": ["Verse 1", "Chorus", "Verse 2", "Chorus", "Bridge", "Chorus", "Outro"],
+      "genres": [
+        {"name": "Country", "guide": "Kleinstadt, Truck, Bar und gebrochene Schwüre. Eine Geschichte mit Twist im letzten Refrain."},
+        {"name": "Outlaw Country", "guide": "Knast, Whiskey, Trotz gegen Gesetz und Musikindustrie. Rau und unbußfertig."},
+        {"name": "Bluegrass", "guide": "Schnelle, erzählerische Zeilen, mehrstimmiger Refrain, Berge und Armut."},
+        {"name": "Folk", "guide": "Strophenlied mit einfachem Refrain, Geschichten von Arbeit, Aufbruch und Unrecht."},
+        {"name": "Singer-Songwriter", "guide": "Intim und tagebuchartig: ein konkreter Moment statt großer Worte."},
+        {"name": "Liedermacher", "guide": "Gesellschaftskritisch und bissig, lange erzählende Strophen mit Pointe am Ende, Gitarre und Haltung.",
+         "structure": ["Verse 1", "Verse 2", "Chorus", "Verse 3", "Chorus", "Verse 4", "Outro"]},
+        {"name": "Shanty", "guide": "Vorsänger und Chor im Wechsel (Chorzeilen in Klammern), Arbeitsrhythmus, Meer, Rum und Dreck.",
+         "structure": ["Verse 1", "Chorus", "Verse 2", "Chorus", "Verse 3", "Chorus"]}
+      ]
+    },
+    {
+      "name": "Latin & World",
+      "guide": "Der Rhythmus trägt den Text: kurze, tanzbare Zeilen, der Refrain wiederholt sich.",
+      "structure": ["Intro", "Verse 1", "Pre-Chorus", "Chorus", "Verse 2", "Pre-Chorus", "Chorus", "Bridge", "Chorus", "Outro"],
+      "genres": [
+        {"name": "Reggaeton", "guide": "Dembow-Flow, kurze wiederholte Hooks, Perreo und Verlangen, spanische Einsprengsel, wenn die Sprache nicht Spanisch ist."},
+        {"name": "Latin Pop", "guide": "Sommer und Leidenschaft, Refrain zum Tanzen, spanische Einsprengsel."},
+        {"name": "Salsa", "guide": "Vorsänger und Coro im Wechsel, Stolz, Leidenschaft, Straße."},
+        {"name": "Bachata", "guide": "Herzschmerz und Verlangen, weich und klagend, direkte Anrede."},
+        {"name": "Reggae", "guide": "Babylon, Freiheit, Liebe und Widerstand, entspannte Offbeat-Phrasierung, Predigt-Ton.",
+         "structure": ["Intro", "Verse 1", "Chorus", "Verse 2", "Chorus", "Instrumental Break", "Chorus", "Outro"]},
+        {"name": "Dancehall", "guide": "Schneller Toasting-Flow, Prahlerei, Körper und Party, Refrain zum Mitrufen."},
+        {"name": "Ska", "guide": "Offbeat-Phrasierung, Bläser-Riffs in Klammern, Witz und Tanzen."},
+        {"name": "Afrobeats", "guide": "Warm und melodisch, viel Wiederholung, Tanzen und Verlangen, lockere Mischsprache."},
+        {"name": "Bossa Nova", "guide": "Leise, sanfte Sehnsucht, Meer und Saudade."},
+        {"name": "Flamenco", "guide": "Klagender Cante, Blut, Stolz, Liebe und Tod, kurze Strophen wie Schreie."},
+        {"name": "Balkan-Pop", "guide": "Turbofolk-Drama: Verrat, Reichtum, Kälte und Party."}
+      ]
+    },
+    {
+      "name": "Schlager & Party",
+      "guide": "Einfache, klare Reime und große Gefühle, ein Refrain, den jeder nach einmal Hören kann.",
+      "structure": ["Intro", "Verse 1", "Chorus", "Verse 2", "Chorus", "Bridge", "Chorus", "Outro"],
+      "genres": [
+        {"name": "Schlager", "guide": "Sehnsucht, Sommer, Liebe und große Worte, saubere Paarreime, Kitsch ohne Scham."},
+        {"name": "Ballermann", "guide": "Derb und besoffen, Kalauer und Anzüglichkeiten, Refrain zum Grölen, Kurzparolen zum Mitrufen."},
+        {"name": "Après-Ski", "guide": "Hütte, Schnaps, Hände hoch, stampfender Mitmach-Refrain."},
+        {"name": "Volksmusik", "guide": "Heimat, Berge, Tracht und Gemütlichkeit mit Jodler-Zeilen."},
+        {"name": "Karneval", "guide": "Schunkel-Refrain, Zusammenhalt, Mundart-Färbung, gutmütiger Spott."},
+        {"name": "Trinklied", "guide": "Stammtisch-Chor, Prost-Rufe, immer absurder werdende Strophen.",
+         "structure": ["Verse 1", "Chorus", "Verse 2", "Chorus", "Verse 3", "Chorus"]}
+      ]
+    },
+    {
+      "name": "Sonstige",
+      "guide": "Passt die Form dem Anlass an, Hauptsache die Zeilen funktionieren gesungen oder gesprochen.",
+      "structure": ["Intro", "Verse 1", "Chorus", "Verse 2", "Chorus", "Bridge", "Chorus", "Outro"],
+      "genres": [
+        {"name": "Klavier-Ballade", "guide": "Leise und nackt, jedes Wort zählt, am Ende kein Trost."},
+        {"name": "Filmsong", "guide": "Titelsong wie aus einem Agentenfilm: Drama, Gefahr, große Bögen."},
+        {"name": "Musical", "guide": "Figuren singen die Handlung, Dialogzeilen mit Figurennamen in Klammern, ein großer Ich-will-Moment."},
+        {"name": "Comedy-Song", "guide": "Pointe in fast jeder Zeile, Steigerung, unerwartete Reime, die letzte Zeile ist der Schlussgag."},
+        {"name": "Protestsong", "guide": "Klare Anklage, benannte Missstände, der Refrain ist eine Demo-Parole."},
+        {"name": "Fangesang", "guide": "Stadion: extrem einfache Zeilen, die 50.000 mitbrüllen können, Parolen und Spott über den Gegner.",
+         "structure": ["Chorus", "Verse 1", "Chorus", "Verse 2", "Chorus"]},
+        {"name": "Weihnachtslied", "guide": "Festliche Sprache, Glöckchen, Familie, gern mit bösem Bruch."},
+        {"name": "Lo-Fi", "guide": "Müde und intim, Nachtgedanken, kurze Zeilen, Spätschicht und Regen."},
+        {"name": "Spoken Word", "guide": "Rhythmische Rede ohne feste Reime, Bilder und Pausen, in Klammern wird nichts gesungen.",
+         "structure": ["Spoken Word", "Chorus", "Spoken Word", "Chorus", "Spoken Word"]}
+      ]
+    }
+  ],
+  "sections": {
+    "Intro": "kurz (0-4 Zeilen), setzt Szene oder Ton, verrät noch nicht alles",
+    "Verse": "treibt die Geschichte weiter, jede Strophe bringt neue Details und wiederholt keine andere",
+    "Rap Verse": "schneller, reimdichter Part",
+    "Pre-Chorus": "2-4 Zeilen, baut Spannung auf und führt zwingend in den Refrain",
+    "Chorus": "Kernaussage mit dem Titel, sofort mitsingbar, 4-6 Zeilen, bei jeder Wiederholung Wort für Wort identisch und vollständig ausgeschrieben",
+    "Hook": "die Hookline: kurz, eingängig, repetitiv, bei jeder Wiederholung Wort für Wort identisch und vollständig ausgeschrieben",
+    "Post-Chorus": "1-4 Zeilen Ohrwurm, darf aus wiederholten Wörtern oder Silben bestehen",
+    "Bridge": "4-6 Zeilen, eine neue Perspektive oder Wendung, klingt anders als Strophe und Refrain",
+    "Breakdown": "wenige wuchtige Zeilen zum Mitschreien, darf sich wiederholen",
+    "Build-Up": "kurze Zeilen, die sich steigern und auf den Drop zulaufen",
+    "Drop": "nur wenige, stark wiederholte Worte",
+    "Spoken Word": "gesprochen statt gesungen, ohne festen Reim",
+    "Outro": "kurzes Schlussbild oder Echo des Refrains, keine Moral",
+    "Guitar Solo": "rein instrumental: nur die Marke, kein Text",
+    "Instrumental Break": "rein instrumental: nur die Marke, kein Text",
+    "Dance Break": "rein instrumental, höchstens 1-2 kurze Rufe",
+    "Interlude": "rein instrumental oder eine einzelne gesprochene Zeile"
+  },
+  "moods": ["Wütend", "Bitterböse", "Düster", "Melancholisch", "Verzweifelt", "Rebellisch", "Sarkastisch", "Frech", "Sexy", "Romantisch", "Euphorisch", "Partystimmung", "Nostalgisch", "Hoffnungsvoll", "Größenwahnsinnig", "Verstörend"],
+  "perspectives": ["Passend zum Genre", "Ich-Erzähler", "Direkte Anrede (Du)", "Wir / Gruppe", "Erzähler über andere Figuren"],
+  "rhymes": ["Passend zum Genre", "Paarreim (AABB)", "Kreuzreim (ABAB)", "Umarmender Reim (ABBA)", "Doppelreime / mehrsilbig", "Dichte Binnenreime", "Kaum Reime, frei"],
+  "heat": [
+    {"name": "Radiotauglich", "hint": "Keine Schimpfwörter, Schärfe nur durch Witz und Andeutung."},
+    {"name": "Direkt", "hint": "Klartext ohne Beschönigung, einzelne Flüche, Tabus werden benannt."},
+    {"name": "Explizit", "hint": "Derbe Sprache, Sex, Drogen und Gewalt werden ausgesprochen."},
+    {"name": "Ohne Filter", "hint": "Kein Blatt vor dem Mund: vulgär, respektlos, nichts wird entschärft."}
+  ]
+}

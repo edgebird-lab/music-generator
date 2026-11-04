@@ -1,0 +1,220 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="color-scheme" content="dark">
+<title>Studio · Music Generator</title>
+<link rel="icon" type="image/svg+xml" href="/static/favicon.svg">
+<link rel="stylesheet" href="/static/style.css">
+<link rel="stylesheet" href="/static/studio.css">
+</head>
+<body class="studio">
+<div id="stStatus" class="sr-only" role="status" aria-live="polite"></div>
+
+<header class="st-top">
+  <a class="sek" href="/" data-i18n="st_back">← Generator</a>
+  <select id="stProject" aria-label="Projekt" data-i18n-aria="st_project"></select>
+  <button type="button" id="stNew" class="sek" data-i18n="st_new">Neu</button>
+  <button type="button" id="stRename" class="sek" data-i18n="st_rename">Umbenennen</button>
+  <button type="button" id="stDelete" class="sek danger" data-i18n="st_delete">Löschen</button>
+  <span class="st-sep"></span>
+  <button type="button" id="stToStart" class="sek icon" title="Stopp, zurück zum Anfang (Pos1)" aria-label="Stopp, zurück zum Anfang" data-i18n-title="st_stop" data-i18n-aria="st_stop">⏮</button>
+  <button type="button" id="stPlay" class="aktion round" title="Abspielen (Leertaste)" aria-label="Abspielen" data-i18n-title="st_play" data-i18n-aria="st_play">▶</button>
+  <button type="button" id="stRec" class="st-rec" aria-pressed="false" title="Vom Mikrofon aufnehmen (R). Das Projekt spielt dazu ab, Kopfhörer sind deshalb besser." aria-label="Aufnehmen" data-i18n-title="st_rec_tip" data-i18n-aria="st_rec"></button>
+  <output id="stTime" class="st-time">0:00.000</output>
+  <div class="st-meter" aria-hidden="true"><div id="stMeter"></div></div>
+  <span class="st-sep"></span>
+  <label class="st-field"><span class="lbl" data-i18n="st_bpm">BPM</span><input id="stBpm" type="number" min="0" max="300" step="0.01"></label>
+  <label class="check" title="Clips rasten an Taktschlägen, Clipkanten und am Abspielkopf ein. Alt hält das Einrasten kurz an." data-i18n-title="st_snap_tip"><input id="stSnap" type="checkbox" checked><span data-i18n="st_snap">Einrasten</span></label>
+  <button type="button" id="stZoomOut" class="sek icon" title="Herauszoomen" aria-label="Herauszoomen" data-i18n-title="st_zoom_out" data-i18n-aria="st_zoom_out">−</button>
+  <button type="button" id="stZoomIn" class="sek icon" title="Hineinzoomen" aria-label="Hineinzoomen" data-i18n-title="st_zoom_in" data-i18n-aria="st_zoom_in">＋</button>
+  <button type="button" id="stUndo" class="sek icon" title="Rückgängig (Strg+Z)" aria-label="Rückgängig" data-i18n-title="st_undo" data-i18n-aria="st_undo">↶</button>
+  <button type="button" id="stRedo" class="sek icon" title="Wiederholen (Strg+Y)" aria-label="Wiederholen" data-i18n-title="st_redo" data-i18n-aria="st_redo">↷</button>
+  <button type="button" id="stExport" class="aktion" title="Mischt alle Spuren ab und speichert das Ergebnis als neuen Song in der Bibliothek." data-i18n-title="st_export_tip" data-i18n="st_export">IN DIE BIBLIOTHEK</button>
+</header>
+
+<main class="st-main">
+  <aside class="st-media" aria-label="Medien" data-i18n-aria="st_media">
+    <input id="stSearch" type="search" placeholder="Suchen" data-i18n-ph="st_search">
+    <button type="button" id="stImport" class="sek" title="Eigene Audiodatei ins Projekt holen, zum Beispiel einen Beat oder eine Aufnahme." data-i18n-title="st_import_tip" data-i18n="st_import">＋ Datei importieren</button>
+    <input id="stFile" type="file" accept="audio/*,.wav,.mp3,.flac,.m4a,.ogg" multiple hidden>
+    <h2 class="col-title" data-i18n="st_stems">Spuren und Aufnahmen</h2>
+    <div id="stStems" class="st-list"></div>
+    <h2 class="col-title" data-i18n="st_library">Aus der Bibliothek</h2>
+    <div id="stSongs" class="st-list"></div>
+  </aside>
+
+  <section class="st-arrange">
+    <div class="st-toolbar" role="toolbar">
+      <button type="button" id="stSplit" class="sek" title="Ausgewählte Clips am Abspielkopf teilen (S)" data-i18n-title="st_split_tip" data-i18n="st_split">✂ Teilen</button>
+      <button type="button" id="stCopy" class="sek" title="Strg+C" data-i18n-title="st_copy_tip" data-i18n="st_copy">Kopieren</button>
+      <button type="button" id="stPaste" class="sek" title="Am Abspielkopf einfügen (Strg+V)" data-i18n-title="st_paste_tip" data-i18n="st_paste">Einfügen</button>
+      <button type="button" id="stDuplicate" class="sek" title="Direkt dahinter einfügen (Strg+D)" data-i18n-title="st_duplicate_tip" data-i18n="st_duplicate">Duplizieren</button>
+      <button type="button" id="stRemove" class="sek" title="Ausgewählte Clips löschen (Entf)" data-i18n-title="st_remove_tip" data-i18n="st_remove">Löschen</button>
+      <span class="st-sep"></span>
+      <button type="button" id="stSeparate" class="sek" title="Trennt den ausgewählten Clip mit Demucs in zwei Spuren, die zusammen wieder genau den Clip ergeben." data-i18n-title="st_separate_tip" data-i18n="st_separate">Gesang und Beat trennen</button>
+      <button type="button" id="stSeparate4" class="sek" title="Vier Spuren: Gesang, Schlagzeug, Bass, Instrumente." data-i18n-title="st_separate4_tip" data-i18n="st_separate4">Fein trennen</button>
+      <span class="st-sep"></span>
+      <button type="button" id="stAddTrack" class="sek" data-i18n="st_add_track">＋ Spur</button>
+      <button type="button" id="stNewVoice" class="aktion" data-i18n="st_new_voice">🎤 Neue Stimme</button>
+      <button type="button" id="stConvert" class="sek" title="Macht aus dem ausgewählten Gesang deine Stimme. Text, Melodie und Timing bleiben." data-i18n-title="vm_convert_tip" data-i18n="vm_convert">In meine Stimme</button>
+      <button type="button" id="stMyVoice" class="sek" title="Modell deiner eigenen Stimme trainieren und verwalten" data-i18n-title="vm_title_tip" data-i18n="vm_title">Meine Stimme</button>
+      <span class="st-sep"></span>
+      <button type="button" id="stLoop" class="sek" aria-pressed="false" title="Den markierten Bereich wiederholen" data-i18n-title="st_loop_tip" data-i18n="st_loop">Schleife</button>
+      <button type="button" id="stCutRange" class="sek" title="Entfernt den markierten Bereich auf allen Spuren und schließt die Lücke." data-i18n-title="st_cut_range_tip" data-i18n="st_cut_range">Bereich herausschneiden</button>
+      <span class="st-status"><span id="stInfo" class="st-info" role="status"></span>
+        <button type="button" id="stJobCancel" class="sek mini danger" hidden data-i18n="st_cancel">Abbrechen</button></span>
+    </div>
+    <div class="st-tracks">
+      <div class="st-heads" id="stHeads"></div>
+      <div class="st-scroll" id="stScroll">
+        <div class="st-spacer" id="stSpacer"><canvas id="stCanvas"></canvas></div>
+      </div>
+      <div class="st-playhead" id="stPlayhead"></div>
+      <div class="st-empty" id="stEmpty" hidden data-i18n="st_empty">Zieh einen Song aus der Bibliothek hierher, oder klicke dort auf ＋.</div>
+    </div>
+    <div class="st-nav" id="stNav" title="Übersicht des ganzen Songs: Klicken oder Ziehen springt an die Stelle, auch während der Wiedergabe. Der helle Rahmen ist der sichtbare Ausschnitt. Pfeiltasten: 1 s, mit Umschalt 10 s." data-i18n-title="st_nav_tip">
+      <canvas id="stNavCanvas" aria-hidden="true"></canvas>
+      <input id="stSeek" type="range" min="0" max="60" step="1" value="0" aria-label="Position im Song" data-i18n-aria="st_seek">
+      <output id="stNavTime" class="st-navtime" aria-hidden="true">0:00</output>
+    </div>
+    <div class="st-inspector" id="stInspector"></div>
+  </section>
+</main>
+
+<dialog id="stTakeDlg">
+  <form method="dialog" id="stTakeForm">
+    <h2 class="col-title" data-i18n="st_take_title">Neue Stimme einsingen</h2>
+    <label class="field"><div class="lblrow"><span class="lbl" data-i18n="st_take_text">Text</span><button type="button" id="stTakePaste" class="sek mini" data-i18n="st_take_paste">Letzten Songtext einfügen</button></div>
+      <textarea name="lyrics" rows="9" spellcheck="false" placeholder="[Verse 1]&#10;…&#10;&#10;[Hook]&#10;…"></textarea></label>
+    <div class="grid">
+      <label class="field"><span class="lbl" data-i18n="st_take_voice">Stimme</span><select name="voice"></select></label>
+      <label class="field"><span class="lbl" data-i18n="language">Sprache</span><select name="language">
+        <option value="de" data-i18n="de">Deutsch</option><option value="en" data-i18n="en">Englisch</option><option value="fr" data-i18n="fr">Französisch</option><option value="es" data-i18n="es">Spanisch</option>
+        <option value="it" data-i18n="it">Italienisch</option><option value="pt" data-i18n="pt">Portugiesisch</option><option value="ja" data-i18n="ja">Japanisch</option><option value="ko" data-i18n="ko">Koreanisch</option>
+        <option value="zh" data-i18n="zh">Chinesisch</option><option value="ru" data-i18n="ru">Russisch</option></select></label>
+    </div>
+    <label class="field"><span class="lbl" data-i18n="st_take_beat">Über diesen Beat singen</span><select name="beat" multiple size="3"></select></label>
+    <label class="field"><span class="lbl" data-i18n="vm_take_convert">Danach umwandeln in</span><select name="convert"></select></label>
+    <label class="field"><span class="lbl" data-i18n="st_take_style">Stil der Stimme</span><input name="style" placeholder="male rap vocals, aggressive, German rap" data-i18n-ph="st_take_style_ph"></label>
+    <p class="st-info" id="stTakeWhere"></p>
+    <div class="submit">
+      <button type="button" id="stTakeCancel" class="sek" data-i18n="st_cancel">Abbrechen</button>
+      <button type="button" id="stTakeGo" class="aktion" data-i18n="st_take_go">EINSINGEN</button>
+    </div>
+  </form>
+</dialog>
+
+<dialog id="stVoiceDlg">
+  <form method="dialog" id="stVoiceForm">
+    <h2 class="col-title" data-i18n="vm_title">Meine Stimme</h2>
+    <div id="stVmList" class="st-list"></div>
+    <p class="st-info" id="stVmStatus" role="status"></p>
+    <div class="field"><span class="lbl" data-i18n="vm_new">Neues Stimm-Modell</span>
+      <p class="st-info" data-i18n="vm_tips">Etwa 10 bis 20 Minuten ruhig ins Mikrofon sprechen. Vorlesen reicht, der Text unten dauert einmal gelesen etwa 7 Minuten. Sprich mal laut, mal leise, und summe oder singe zwischendurch, gern schief, damit das Modell auch hohe Töne kennt. Keine Musik im Hintergrund, möglichst wenig Hall. Bitte nur deine eigene Stimme oder mit Erlaubnis der Person.</p>
+      <details class="st-read"><summary data-i18n="vm_read_title">Text zum Vorlesen</summary><div lang="de">Heute Morgen habe ich lange geschlafen und danach in Ruhe einen Kaffee auf dem Balkon getrunken.
+Die Straßenbahn fährt alle zehn Minuten, aber am Wochenende muss man manchmal etwas länger warten.
+Mein Bruder repariert sein altes Fahrrad schon seit Wochen und findet immer noch ein neues Problem.
+Im Supermarkt gab es frische Pfirsiche, also habe ich gleich zwei Kilo mitgenommen.
+Wenn es draußen regnet, bleibe ich am liebsten zu Hause und höre laute Musik.
+Der Hund der Nachbarn bellt jeden Abend pünktlich um sieben, das kann man fast als Uhr benutzen.
+Ich glaube nicht, dass wir den Zug noch erreichen, wenn wir jetzt nicht sofort losgehen.
+Zwischen den hohen Bäumen führt ein schmaler Weg hinunter zum See.
+Die Kinder spielen im Hof Fußball und schreien bei jedem Tor, als wäre es das Endspiel.
+Am Freitag gehen wir essen, und danach schauen wir, wohin uns der Abend noch treibt.
+Für diesen Kuchen braucht man Butter, Zucker, Eier, Mehl und eine ordentliche Portion Geduld.
+Das Wetter schlägt hier oben schnell um, deshalb sollte man immer eine warme Jacke einpacken.
+Mein Chef will den Bericht bis morgen früh haben, obwohl er selbst noch gar nicht weiß, was drinstehen soll.
+Auf dem Dachboden habe ich eine Kiste mit alten Fotos und Briefen von meiner Großmutter gefunden.
+Wir haben uns verlaufen, weil die Karte falsch war und das Handy keinen Empfang mehr hatte.
+Die Musik war so laut, dass man sein eigenes Wort nicht mehr verstehen konnte.
+Jeden Sommer fahren wir an die Ostsee, weil das Wasser dort so schön klar und kühl ist.
+Nach dem langen Winter freut sich jeder über die ersten warmen Sonnenstrahlen im März.
+Könntest du mir bitte kurz helfen, diesen schweren Schrank in die andere Ecke zu schieben?
+Warum hat mir eigentlich niemand gesagt, dass die Besprechung schon um acht Uhr anfängt?
+Das ist wirklich die beste Pizza, die ich seit Jahren gegessen habe, und ich esse viel Pizza.
+Sie lachte laut, schüttelte den Kopf und ging ohne ein weiteres Wort aus dem Zimmer.
+Der alte Mann sitzt jeden Tag auf derselben Bank und füttert die Tauben mit trockenem Brot.
+In der Nacht ist es hier so still, dass man die Blätter im Wind rascheln hört.
+Ich habe keine Ahnung, wie das funktioniert, aber irgendwie läuft die Maschine wieder.
+Die Polizei sperrte die Kreuzung, weil ein Lastwagen seine ganze Ladung verloren hatte.
+Wer früh aufsteht, hat den ganzen Tag Zeit, sich darüber zu ärgern, dass er so früh aufgestanden ist.
+Mein Nachbar spielt nachts Schlagzeug, und ich überlege ernsthaft, ihm die Stöcke zu verstecken.
+Fünf Freunde saßen am Feuer, erzählten sich Geschichten und tranken das letzte Bier.
+Der Zug hatte wieder eine Stunde Verspätung, und die Durchsage kam natürlich erst ganz zum Schluss.
+Ich möchte endlich wieder einmal richtig ausschlafen, ohne dass mich jemand um sechs Uhr anruft.
+Die Geschichte klingt verrückt, aber sie ist genau so passiert, das schwöre ich dir.
+Unsere Katze schläft den ganzen Tag und rennt mitten in der Nacht durch die Wohnung.
+Auf dem Markt riecht es nach Käse, geräuchertem Fisch und frisch gebackenem Brot.
+Das Geld reicht nie bis zum Monatsende, egal wie sehr ich mich anstrenge und wie viel ich spare.
+Wir tanzten bis zum Morgengrauen, und auf dem Heimweg sang die ganze Straße mit.
+Gestern war ich beim Zahnarzt, und ich spüre meine linke Gesichtshälfte immer noch nicht.
+Der Berg sieht von hier aus ganz harmlos aus, aber der Aufstieg dauert mindestens sechs Stunden.
+Was soll ich denn jetzt machen, wenn du mir nicht einmal die Wahrheit sagen willst?
+Komm schon, stell dich nicht so an, das Wasser ist überhaupt nicht kalt!
+Ich vermisse die Stadt, in der ich aufgewachsen bin, auch wenn dort längst alles anders aussieht.
+Die Brücke über den Fluss wurde vor hundert Jahren gebaut und hält bis heute jeden Sturm aus.
+Sein Lachen war so ansteckend, dass irgendwann der ganze Waggon mitlachen musste.
+Pack deine Sachen, wir fahren noch heute los und kommen erst zurück, wenn uns danach ist.
+Niemand weiß genau, woher das Geräusch kommt, aber es wird jede Nacht ein bisschen lauter.
+Mit achtzehn wollte ich die Welt verändern, heute bin ich froh, wenn die Waschmaschine läuft.
+Im Herbst färben sich die Wälder rot und golden, und morgens liegt Nebel über den Feldern.
+Das Konzert war ausverkauft, trotzdem haben wir uns irgendwie noch hineingeschmuggelt.
+Ich schreibe dir diesen Brief, weil ich am Telefon nie die richtigen Worte finde.
+Die Tür quietscht, das Dach ist undicht, aber es ist mein Haus und ich liebe es.
+Zieh dir etwas Warmes an, denn heute Nacht soll es richtig kalt werden.
+Sechs Wochen lang habe ich auf diese Antwort gewartet, und dann kam nur ein einziger Satz.
+Der Wind pfeift durch die Gassen, und die Schilder an den Läden klappern im Takt.
+Es tut mir leid, dass ich so spät komme, aber auf der Autobahn ging gar nichts mehr.
+Ihre Stimme zitterte, als sie endlich aussprach, was alle schon längst geahnt hatten.
+Früher haben wir uns jeden Tag gesehen, heute schicken wir uns nur noch Glückwünsche zum Geburtstag.
+Ich zähle jetzt bis drei, und dann will ich, dass hier alle endlich still sind.
+Die Sonne geht unter, das Meer wird dunkel, und irgendwo spielt jemand leise Gitarre.
+Tschüss, wir sehen uns nächste Woche, und vergiss bitte nicht, mir mein Buch zurückzugeben.
+Manchmal frage ich mich, was passiert wäre, wenn ich damals einfach geblieben wäre.
+Der Kellner brachte die falsche Suppe, entschuldigte sich und brachte dann noch einmal die falsche.
+Die ganze Stadt schläft schon, nur in meinem Fenster brennt um diese Zeit noch Licht.
+Von hier oben sieht alles so klein aus, die Autos, die Häuser und auch meine Sorgen.
+Hör auf zu reden und fang endlich an, die Welt wartet nicht auf deine nächste Ausrede.
+Das Feuer knistert im Ofen, draußen fällt Schnee, und ich will heute nirgendwo mehr hin.
+Wir haben nicht viel, aber was wir haben, teilen wir, und das reicht uns vollkommen.
+Eins, zwei, drei, vier, fünf, sechs, sieben, acht, neun, zehn, und jetzt alle zusammen von vorn.
+Ein Fuchs schlich über die verschneite Wiese und verschwand lautlos zwischen den Tannen.
+Bis zum Hals in Schulden, aber immer noch ein Lächeln im Gesicht, so kennen wir ihn alle.
+Am Ende bleibt die Frage, ob sich der ganze Ärger wirklich gelohnt hat, und ich sage ja.</div></details></div>
+    <label class="field"><span class="lbl" data-i18n="vm_name">Name</span><input name="name"></label>
+    <div class="field"><div class="lblrow"><span class="lbl" data-i18n="vm_recordings">Aufnahmen</span><span class="st-info" id="stVmTotal"></span></div>
+      <div id="stVmRecs" class="st-list"></div>
+      <div class="st-vmrow"><button type="button" id="stVmRec" class="sek"></button><button type="button" id="stVmImport" class="sek" data-i18n="st_import">＋ Datei importieren</button></div></div>
+    <label class="field"><span class="lbl" data-i18n="vm_quality">Qualität</span><select name="quality">
+      <option value="fast" data-i18n="vm_q_fast">Schnell (100 Durchläufe)</option><option value="good" selected data-i18n="vm_q_good">Gut (200 Durchläufe)</option><option value="best" data-i18n="vm_q_best">Gründlich (400 Durchläufe)</option></select></label>
+    <p class="st-info" id="stVmEstimate"></p>
+    <div class="submit">
+      <button type="button" id="stVmClose" class="sek" data-i18n="vm_close">Schließen</button>
+      <button type="button" id="stVmCancel" class="sek danger" hidden data-i18n="vm_cancel">Training abbrechen</button>
+      <button type="button" id="stVmTrain" class="aktion" data-i18n="vm_train">TRAINING STARTEN</button>
+    </div>
+  </form>
+</dialog>
+
+<dialog id="stConvertDlg">
+  <form method="dialog" id="stConvertForm">
+    <h2 class="col-title" data-i18n="vm_convert_title">In meine Stimme umwandeln</h2>
+    <p class="st-info" id="stConvertWhat"></p>
+    <label class="field"><span class="lbl" data-i18n="vm_model">Stimm-Modell</span><select name="model"></select></label>
+    <div class="field"><div class="lblrow"><span class="lbl" data-i18n="vm_pitch">Tonhöhe</span><output id="stConvertPitch" class="st-info">0</output></div>
+      <input name="pitch" type="range" min="-12" max="12" step="1" value="0" aria-label="Tonhöhe" data-i18n-aria="vm_pitch">
+      <span class="st-info" data-i18n="vm_pitch_tip">In Halbtönen. Liegt der Gesang höher als deine Stimme, hier nach unten: Frau zu Mann etwa -12, Mann zu Frau etwa +12. Nur ganze Oktaven (-12, 0, +12) bleiben in der Tonart des Beats.</span></div>
+    <label class="check"><input name="mute" type="checkbox" checked><span data-i18n="vm_mute">Originalspur stumm schalten</span></label>
+    <div class="submit" style="margin-top:14px">
+      <button type="button" id="stConvertCancel" class="sek" data-i18n="st_cancel">Abbrechen</button>
+      <button type="button" id="stConvertGo" class="aktion" data-i18n="vm_convert_go">UMWANDELN</button>
+    </div>
+  </form>
+</dialog>
+
+<script src="/static/i18n.js"></script>
+<script src="/static/studio.js"></script>
+</body>
+</html>

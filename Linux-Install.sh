@@ -1,5 +1,4 @@
 #!/bin/bash
-# Music Generator – Installer für Linux (Arch Linux / Derivate).
-# Autor: ZeroDot1
+# Music Generator (EdgeBird-Lab) – Installer für Linux, alle Distributionen: siehe install.sh
 SOURCE_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-exec "$SOURCE_DIR/arch_linux.sh" --install-only "$@"
+exec bash "$SOURCE_DIR/install.sh" --no-start "$@"

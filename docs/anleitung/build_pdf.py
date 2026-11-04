@@ -207,7 +207,7 @@ def page_cover(c):
     ratio = 908 / 149
     wh = (W - 2 * M - 14) / (1 + ratio)
     logo(c, M, y, wh)
-    c.drawImage(str(HERE / "alphatester.png"), M + wh + 14, y - wh, height=wh, width=wh * ratio, mask="auto")
+    c.drawImage(str(HERE / "edgebird-lab.png"), M + wh + 14, y - wh, height=wh, width=wh * ratio, mask="auto")
     c.setFillColor(HexColor("#8a90a0"))
     c.setFont("Arial-Bold", 50)
     c.drawString(M, y - 170, "MUSIC")
@@ -668,7 +668,7 @@ def page_linux(c):
 
 c = canvas.Canvas(str(OUT), pagesize=A4)
 c.setTitle(T("p8_31"))
-c.setAuthor("Alphatester")
+c.setAuthor("EdgeBird-Lab")
 for fn in (page_cover, page_overview, page_steps, page_flow, page_windows, page_app, page_prompts, page_help, page_trouble, page_linux):
     fn(c)
     c.showPage()

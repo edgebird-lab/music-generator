@@ -3,6 +3,46 @@
 LANGS = ("de", "en", "es", "fr", "it", "pt", "tr", "pl", "ru", "uk", "ja", "zh")
 
 MSG = {
+    "vm_queue": {"de": "Wartet auf die Grafikkarte …", "en": "Waiting for the GPU …"},
+    "vm_prepare": {"de": "Aufnahmen werden vorbereitet …", "en": "Preparing the recordings …"},
+    "vm_training_start": {"de": "Training startet …", "en": "Training is starting …"},
+    "vm_training": {"de": "Training: Durchlauf {n} von {total}, noch etwa {left} Min.", "en": "Training: pass {n} of {total}, about {left} min left"},
+    "vm_converting": {"de": "Wird in deine Stimme umgewandelt …", "en": "Converting to your voice …"},
+    "vm_no_result": {"de": "Applio hat kein Ergebnis geliefert.", "en": "Applio returned no result."},
+    "vm_too_short": {"de": "Zu wenig Aufnahme: mindestens 30 Sekunden, besser 10 Minuten.", "en": "Not enough recording: at least 30 seconds, better 10 minutes."},
+    "studio_in_use": {"de": "Wird noch in einem Projekt verwendet.", "en": "Still used in a project."},
+    "studio_take_queue": {
+        "de": "Neue Stimme wartet auf die Grafikkarte …",
+        "en": "New voice is waiting for the GPU …",
+    },
+    "studio_take_sing": {
+        "de": "Stimme wird eingesungen …",
+        "en": "Recording the voice …",
+    },
+    "studio_take_split": {
+        "de": "Gesang wird abgetrennt und auf den Beat gelegt …",
+        "en": "Separating the vocals and placing them on the beat …",
+    },
+    "studio_no_wav": {
+        "de": "Im Studio lassen sich nur WAV-Dateien verwenden.",
+        "en": "The studio can only use WAV files.",
+    },
+    "studio_installing": {
+        "de": "Die Spurtrennung wird eingerichtet (einmalig, etwa 1 GB) …",
+        "en": "Setting up track separation (once, about 1 GB) …",
+    },
+    "studio_separating": {
+        "de": "Spuren werden getrennt …",
+        "en": "Separating tracks …",
+    },
+    "voice_missing": {
+        "de": "Die gewählte Stimme gibt es nicht mehr. Bitte die Stimme im Formular entfernen oder neu wählen.",
+        "en": "The chosen voice no longer exists. Please remove it in the form or choose it again.",
+    },
+    "voice_unreadable": {
+        "de": "Aus diesem Song lässt sich keine Stimme übernehmen: Die Datei ist kein lesbares 16-Bit-WAV.",
+        "en": "The voice of this song cannot be used: the file is not a readable 16-bit WAV.",
+    },
     "mp3_failed": {
         "de": "Umwandlung in MP3 fehlgeschlagen. In den Einstellungen unter „Export“ WAV wählen.",
         "en": "Conversion to MP3 failed. Choose WAV under “Export” in the settings.",
@@ -198,6 +238,20 @@ MSG = {
         "uk": "Недопустиме значення для {field}: вкажи число більше 0.",
         "ja": "{field} の値が無効です。0 より大きい数値を入力してください。",
         "zh": "{field} 的值无效: 请输入大于 0 的数字。",
+    },
+    "no_release": {
+        "de": "Auf GitHub gibt es noch keine Veröffentlichung.",
+        "en": "There is no release on GitHub yet.",
+        "es": "Todavía no hay ninguna versión publicada en GitHub.",
+        "fr": "Il n'y a pas encore de version publiée sur GitHub.",
+        "it": "Non c'è ancora nessuna versione pubblicata su GitHub.",
+        "pt": "Ainda não há nenhuma versão publicada no GitHub.",
+        "tr": "GitHub'da henüz yayımlanmış bir sürüm yok.",
+        "pl": "Na GitHubie nie ma jeszcze żadnego wydania.",
+        "ru": "На GitHub пока нет ни одного релиза.",
+        "uk": "На GitHub поки немає жодного релізу.",
+        "ja": "GitHub にはまだリリースがありません。",
+        "zh": "GitHub 上还没有发布版本。",
     },
     "gh_unreachable": {
         "de": "GitHub ist nicht erreichbar (Internetverbindung?).",

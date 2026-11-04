@@ -1,11 +1,18 @@
-"""Updates aus dem GitHub-Repository: prüfen, holen, neu starten."""
+"""Updates: holt die neueste Veröffentlichung (Release) des EdgeBird-Lab-Repositorys von GitHub, spielt sie ein und startet neu.
+
+Maßgeblich ist die neueste Veröffentlichung (GitHub-Release, kein Vorab-Release), nicht der letzte Stand des Branches:
+So bekommen Nutzer nur Stände, die ausdrücklich freigegeben wurden. Ohne Verbindung zur GitHub-API (z. B. Ratenbegrenzung)
+zählt der höchste Versions-Tag im Repository.
+"""
 import asyncio
 import os
+import re
 import signal
 import subprocess
 import sys
 from pathlib import Path
 
+import httpx
 from fastapi import APIRouter, Header, HTTPException, Request
 
 from . import db
@@ -13,7 +20,13 @@ from .messages import tr
 
 ROOT = Path(__file__).resolve().parent.parent
 BRANCH = "main"
-REPO_URL = "https://github.com/rabbitfiremediacreation/music-generator.git"
+OWNER_REPO = "edgebird-lab/music-generator"
+REPO_URL = f"https://github.com/{OWNER_REPO}.git"
+REPO_WEB = f"https://github.com/{OWNER_REPO}"
+API_LATEST = f"https://api.github.com/repos/{OWNER_REPO}/releases/latest"
+VERSION_FILE = ROOT / "VERSION"
+# Ändern sich diese Dateien, muss nach dem Update der Installer noch einmal laufen (neue Engine-Version, neue Modelle, neue Pakete)
+INSTALL_FILES = {"scripts/common.sh", "scripts/common.ps1"}
 router = APIRouter(prefix="/api/update")
 
 
@@ -38,26 +51,102 @@ def _has_head() -> bool:
         return False
 
 
+def _version_key(tag: str) -> tuple:
+    """v1.2.10 > v1.2.9: Zahlen vergleichen, nicht Text."""
+    return tuple(int(x) for x in re.findall(r"\d+", tag))
+
+
+def file_version() -> str:
+    try:
+        return VERSION_FILE.read_text(encoding="utf-8").strip()
+    except OSError:
+        return ""
+
+
+def current_version() -> str:
+    """Installierte Version: der Tag der Veröffentlichung, sonst Versionsnummer aus VERSION plus kurzer Commit-Hash."""
+    if not _has_head():
+        return file_version() or "?"
+    try:
+        return git("describe", "--tags", "--exact-match", "HEAD")
+    except RuntimeError:
+        pass
+    try:
+        short = git("rev-parse", "--short", "HEAD")
+    except RuntimeError:
+        short = ""
+    v = file_version()
+    return f"{v}+{short}" if v and short else (v or short or "?")
+
+
+def _latest_release(lang: str) -> dict:
+    """Neueste Veröffentlichung: Tag, Titel, Notizen, Adresse. Erst die GitHub-API, sonst die Tags des Repositorys."""
+    try:
+        r = httpx.get(API_LATEST, timeout=15, headers={"Accept": "application/vnd.github+json", "User-Agent": "music-generator-updater"})
+        if r.status_code == 200:
+            d = r.json()
+            if d.get("tag_name"):
+                return {"tag": d["tag_name"], "name": d.get("name") or d["tag_name"], "notes": d.get("body") or "", "url": d.get("html_url") or REPO_WEB}
+        if r.status_code == 404:
+            raise RuntimeError(tr(lang, "no_release"))
+    except httpx.HTTPError:
+        pass   # kein Netz oder Ratenbegrenzung: unten über die Tags
+    tags = []
+    for line in git("ls-remote", "--tags", "--refs", REPO_URL, timeout=30).splitlines():
+        name = line.split("refs/tags/", 1)[-1].strip()
+        if re.fullmatch(r"v?\d+(\.\d+)*", name):
+            tags.append(name)
+    if not tags:
+        raise RuntimeError(tr(lang, "no_release"))
+    tag = max(tags, key=_version_key)
+    return {"tag": tag, "name": tag, "notes": "", "url": f"{REPO_WEB}/releases/tag/{tag}"}
+
+
+def _notes_lines(notes: str, limit: int = 15) -> list[str]:
+    """Aufzählungspunkte der Release-Notizen für die Liste in den Einstellungen."""
+    out = []
+    for line in notes.replace("\r", "").splitlines():
+        m = re.match(r"\s*[-*•]\s+(.*)", line)
+        if m and m.group(1).strip():
+            out.append(re.sub(r"[*_`]", "", m.group(1)).strip())
+        if len(out) >= limit:
+            break
+    return out
+
+
+def _ensure_origin() -> None:
+    """origin muss auf das EdgeBird-Lab-Repository zeigen (Installationen aus dem Ursprungsprojekt sonst nicht)."""
+    try:
+        url = git("remote", "get-url", "origin")
+    except RuntimeError:
+        git("remote", "add", "origin", REPO_URL)
+        return
+    if OWNER_REPO.lower() not in url.lower():
+        git("remote", "set-url", "origin", REPO_URL)
+
+
 def _status(lang: str = "de") -> dict:
+    rel = _latest_release(lang)
+    tag = rel["tag"]
     if not _has_head():
         # Ohne Git installiert (z. B. als ZIP geladen): Version unbekannt, das Update stellt auf Git um
-        latest = git("ls-remote", REPO_URL, BRANCH, timeout=30).split()
-        if not latest:
-            raise RuntimeError(tr(lang, "gh_unreachable"))
-        return {"current": "?", "latest": latest[0][:7], "behind": 1, "ahead": 0, "dirty": False, "needs_install": False, "nogit": True,
-                "changes": [tr(lang, "nogit_change")]}
-    git("fetch", "--quiet", "origin", BRANCH, timeout=30)
-    remote = f"origin/{BRANCH}"
-    behind = int(git("rev-list", "--count", f"HEAD..{remote}"))
-    ahead = int(git("rev-list", "--count", f"{remote}..HEAD"))
-    changes = git("log", f"HEAD..{remote}", "--format=%s", "-n", "15").splitlines() if behind else []
+        return {"current": file_version() or "?", "latest": tag, "behind": 1, "ahead": 0, "dirty": False, "needs_install": False, "nogit": True,
+                "changes": _notes_lines(rel["notes"]) or [tr(lang, "nogit_change")], "name": rel["name"], "url": rel["url"]}
+    _ensure_origin()
+    git("fetch", "--quiet", "--tags", "origin", timeout=60)
+    try:
+        target = git("rev-parse", "--verify", f"refs/tags/{tag}^{{commit}}")
+    except RuntimeError as e:
+        raise RuntimeError(tr(lang, "gh_unreachable")) from e
+    behind = int(git("rev-list", "--count", f"HEAD..{target}"))
+    ahead = int(git("rev-list", "--count", f"{target}..HEAD"))
+    commits = git("log", f"HEAD..{target}", "--format=%s", "-n", "15").splitlines() if behind else []
     dirty = bool(git("status", "--porcelain", "--untracked-files=no"))
-    changed_files = git("diff", "--name-only", f"HEAD..{remote}").splitlines() if behind else []
+    changed_files = set(git("diff", "--name-only", f"HEAD..{target}").splitlines()) if behind else set()
     return {
-        "current": git("rev-parse", "--short", "HEAD"), "latest": git("rev-parse", "--short", remote),
-        "behind": behind, "ahead": ahead, "changes": changes, "dirty": dirty,
-        # Neue acestep.cpp-Version oder neue Pakete: der Installer muss danach noch einmal laufen
-        "needs_install": "scripts/common.sh" in changed_files or "scripts/common.ps1" in changed_files,
+        "current": current_version(), "latest": tag, "name": rel["name"], "url": rel["url"],
+        "behind": behind, "ahead": ahead, "changes": _notes_lines(rel["notes"]) or commits, "dirty": dirty,
+        "needs_install": bool(changed_files & INSTALL_FILES),
     }
 
 
@@ -89,14 +178,15 @@ def _apply(lang: str = "de") -> dict:
     if s.get("nogit"):
         return _apply_nogit(s)
     before = git("rev-parse", "HEAD")
-    git("pull", "--ff-only", "--quiet", "origin", BRANCH, timeout=120)
+    # Nur vorspulen: die Veröffentlichung liegt auf dem Weg vor uns, eigene Commits gibt es nicht (oben geprüft)
+    git("merge", "--ff-only", "--quiet", f"refs/tags/{s['latest']}^{{commit}}", timeout=120)
     if {"pyproject.toml", "uv.lock"} & set(git("diff", "--name-only", before, "HEAD").splitlines()):
         subprocess.run(["uv", "sync", "--quiet"], cwd=ROOT, check=True, timeout=300)
-    return {**s, "current": git("rev-parse", "--short", "HEAD")}
+    return {**s, "current": current_version()}
 
 
 def _apply_nogit(s: dict) -> dict:
-    """Ordner ohne .git in ein Git-Repository verwandeln und auf den neuesten Stand bringen.
+    """Ordner ohne .git in ein Git-Repository verwandeln und auf die neueste Veröffentlichung bringen.
     data/, engine/ und .venv sind in .gitignore und bleiben unberührt."""
     def acestep_rev() -> str:
         try:
@@ -107,13 +197,11 @@ def _apply_nogit(s: dict) -> dict:
     if not (ROOT / ".git").exists():
         git("init", "-q")   # ohne „-b“: ältere Git-Versionen (vor 2.28, z. B. alte Xcode-Kommandozeilenwerkzeuge) kennen die Option nicht
         git("symbolic-ref", "HEAD", f"refs/heads/{BRANCH}")
-    if "origin" not in git("remote").split():
-        git("remote", "add", "origin", REPO_URL)
-    git("fetch", "--quiet", "origin", BRANCH, timeout=120)
-    git("checkout", "--quiet", "-B", BRANCH, f"origin/{BRANCH}", "--force")
-    git("branch", "--set-upstream-to", f"origin/{BRANCH}", BRANCH)
+    _ensure_origin()
+    git("fetch", "--quiet", "--tags", "origin", timeout=180)
+    git("checkout", "--quiet", "-B", BRANCH, f"refs/tags/{s['latest']}^{{commit}}", "--force")
     subprocess.run(["uv", "sync", "--quiet"], cwd=ROOT, check=True, timeout=300)
-    return {**s, "current": git("rev-parse", "--short", "HEAD"), "needs_install": acestep_rev() != old_rev}
+    return {**s, "current": current_version(), "needs_install": acestep_rev() != old_rev}
 
 
 @router.post("/apply")

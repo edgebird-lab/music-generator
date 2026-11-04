@@ -1,0 +1,113 @@
+/* Tonstudio: nutzt die Farben und Knöpfe aus style.css, füllt aber das ganze Fenster */
+html, body.studio { height: 100%; overflow: hidden; }
+body.studio { padding: 0; display: flex; flex-direction: column; }
+.st-top { flex: none; display: flex; align-items: center; gap: 8px; flex-wrap: wrap; padding: 8px 12px; background: var(--panel); border-bottom: 1px solid var(--border); }
+.st-top select { width: auto; min-width: 180px; max-width: 280px; padding: 6px 8px; }
+.st-sep { width: 1px; align-self: stretch; background: var(--border); margin: 2px 4px; }
+.st-time { font-variant-numeric: tabular-nums; font-size: 16px; font-weight: 600; color: var(--logo-text); min-width: 88px; text-align: right; }
+.st-meter { width: 90px; height: 8px; background: var(--bg); border: 1px solid var(--border); border-radius: 4px; overflow: hidden; }
+.st-meter div { height: 100%; width: 0; background: var(--brand); }
+.st-meter div.hot { background: var(--error); }
+.st-field { display: inline-flex; align-items: center; gap: 6px; }
+.st-field input { width: 66px; padding: 5px 6px; }
+.st-top .aktion:last-child { margin-left: auto; border-color: var(--accent2); color: #f0dcba; }
+.st-top .aktion.round { width: 36px; height: 36px; }
+
+.st-main { flex: 1; min-height: 0; display: grid; grid-template-columns: 270px minmax(0, 1fr); }
+.st-media, .st-scroll { scrollbar-color: #3a3f4b transparent; }
+.st-media { display: flex; flex-direction: column; gap: 8px; padding: 10px; overflow-y: auto; border-right: 1px solid var(--border); background: var(--panel); }
+.st-media .col-title { margin-top: 6px; }
+.st-list { display: flex; flex-direction: column; gap: 2px; }
+.st-item { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: center; gap: 4px; padding: 4px 4px 4px 8px; border: 1px solid transparent; border-radius: 6px; cursor: grab; }
+.st-item:hover { background: rgba(255, 255, 255, .04); border-color: var(--border); }
+.st-item .n { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 13px; }
+.st-item .m { grid-column: 1; color: var(--muted); font-size: 11px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.st-item .a { grid-column: 2; grid-row: 1 / 3; display: flex; gap: 2px; }
+.st-item button { background: none; border: 1px solid transparent; border-radius: 4px; color: var(--muted); width: 26px; height: 26px; padding: 0; }
+.st-item button:hover { color: var(--accent); border-color: var(--accent); }
+.st-item button.on { color: var(--accent2); border-color: var(--accent2); }
+.st-none { color: var(--muted); font-size: 12px; padding: 4px 8px; }
+
+.st-arrange { display: flex; flex-direction: column; min-width: 0; min-height: 0; }
+.st-toolbar { flex: none; display: flex; align-items: center; gap: 6px; flex-wrap: wrap; padding: 6px 10px; border-bottom: 1px solid var(--border); }
+.st-toolbar .sek, .st-toolbar .aktion { padding: 5px 9px; font-size: 12px; }
+.st-toolbar .sek:disabled { opacity: .4; cursor: not-allowed; }
+.st-toolbar .sek[aria-pressed=true] { color: var(--accent2); border-color: var(--accent2); }
+.st-info { margin: 0; font-size: 12px; color: var(--muted); }
+.st-info.err { color: var(--error); }
+.st-info.busy { color: var(--accent2); }
+.st-status { margin-left: auto; display: inline-flex; align-items: center; gap: 8px; text-align: right; }
+
+.st-tracks { flex: 1; min-height: 0; position: relative; display: grid; grid-template-columns: 220px minmax(0, 1fr); }
+.st-heads { overflow: hidden; border-right: 1px solid var(--border); background: var(--panel); padding-top: 28px; position: relative; }
+.st-head { height: 88px; padding: 6px 8px; border-bottom: 1px solid var(--border); display: flex; flex-direction: column; gap: 4px; }
+.st-head.sel { background: rgba(109, 140, 255, .1); }
+.st-head .row { display: flex; align-items: center; gap: 4px; }
+.st-head input[type=text] { flex: 1; min-width: 0; padding: 2px 6px; font-size: 12px; background: transparent; border-color: transparent; }
+.st-head input[type=text]:hover, .st-head input[type=text]:focus { background: var(--bg); border-color: var(--border); }
+.st-head button { width: 24px; height: 22px; padding: 0; font-size: 11px; font-weight: 700; background: none; color: var(--muted); border: 1px solid var(--border); border-radius: 4px; }
+.st-head button:hover { color: var(--accent); border-color: var(--accent); }
+.st-head button.m.on { background: rgba(255, 107, 107, .2); color: var(--error); border-color: var(--error); }
+.st-head button.s.on { background: var(--gold-tint2); color: var(--accent2); border-color: var(--accent2); }
+.st-head label { display: grid; grid-template-columns: 14px minmax(0, 1fr); align-items: center; gap: 4px; font-size: 10px; color: var(--muted); }
+.st-head input[type=range] { width: 100%; height: 14px; margin: 0; }
+.st-scroll { overflow: auto; position: relative; background: var(--bg); }
+.st-spacer { position: relative; min-width: 100%; min-height: 100%; }
+#stCanvas { position: sticky; top: 0; left: 0; display: block; touch-action: none; }
+.st-playhead { position: absolute; top: 0; bottom: 0; left: 220px; width: 1px; background: var(--accent2); pointer-events: none; box-shadow: 0 0 4px rgba(209, 167, 92, .8); will-change: transform; }
+.st-empty { position: absolute; inset: 60px 0 0 220px; display: grid; place-items: center; color: var(--muted); font-size: 13px; letter-spacing: .04em; pointer-events: none; }
+
+.st-inspector { flex: none; min-height: 48px; display: flex; align-items: center; gap: 14px; flex-wrap: wrap; padding: 6px 12px; border-top: 1px solid var(--border); background: var(--panel); font-size: 12px; }
+.st-inspector .name { font-weight: 600; max-width: 320px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.st-inspector label { display: inline-flex; align-items: center; gap: 6px; color: var(--muted); }
+.st-inspector input[type=range] { width: 120px; }
+.st-inspector output { min-width: 52px; font-variant-numeric: tabular-nums; color: var(--text); }
+#stTakeDlg { width: min(600px, calc(100vw - 32px)); }
+#stTakeDlg textarea { font-family: ui-monospace, Menlo, monospace; font-size: 13px; }
+
+/* Aufnahme */
+.st-rec { width: 28px; height: 28px; padding: 0; border-radius: 50%; border: 1px solid var(--border); background: var(--bg); display: grid; place-items: center; }
+.st-rec::before { content: ""; width: 12px; height: 12px; border-radius: 50%; background: #d9534f; }
+.st-rec:hover { border-color: #ff5252; }
+.st-rec[aria-pressed=true] { background: #2a1517; border-color: #ff5252; animation: strec 1.1s ease-in-out infinite; }
+.st-rec[aria-pressed=true]::before { border-radius: 2px; background: #ff5252; }
+.st-rec:disabled { opacity: .4; cursor: not-allowed; }
+@keyframes strec { 50% { box-shadow: 0 0 0 5px rgba(255, 82, 82, .25); } }
+@media (prefers-reduced-motion: reduce) { .st-rec[aria-pressed=true] { animation: none; } }
+
+/* Effekte: Knopf in der Spur, Regler unten im Inspektor */
+.st-head button.fx { width: 26px; font-size: 9px; letter-spacing: .02em; }
+.st-head button.fx.on { background: rgba(109, 140, 255, .18); color: var(--accent); border-color: var(--accent); }
+.st-head button.fx.open { outline: 1px solid var(--accent2); outline-offset: 1px; }
+.st-inspector.fx { align-items: flex-start; }
+.st-fxgroup { display: flex; flex-direction: column; gap: 4px; padding-right: 14px; border-right: 1px solid var(--border); }
+.st-fxgroup:last-child { border-right: 0; }
+.st-fxgroup > b { font-size: 10px; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); font-weight: 600; }
+.st-fxgroup label { display: grid; grid-template-columns: 84px 90px 50px; align-items: center; gap: 6px; }
+.st-fxgroup input[type=range] { width: 90px; margin: 0; }
+.st-fxgroup select { padding: 3px 6px; font-size: 12px; width: 150px; }
+.st-fxgroup label select { width: 90px; }
+
+/* Meine Stimme */
+#stVoiceDlg, #stConvertDlg { width: min(600px, calc(100vw - 32px)); }
+#stVoiceDlg .st-info { margin: 0 0 6px; }
+.st-vm { display: grid; grid-template-columns: minmax(0, 1fr) auto auto; align-items: center; gap: 8px; padding: 5px 8px; border: 1px solid var(--border); border-radius: 6px; font-size: 13px; }
+.st-vm .m { color: var(--muted); font-size: 11px; }
+.st-vm.err .m { color: var(--error); }
+.st-vm button { background: none; border: 1px solid transparent; border-radius: 4px; color: var(--muted); width: 26px; height: 26px; padding: 0; }
+.st-vm button:hover { color: var(--error); border-color: var(--error); }
+.st-vm label { display: flex; align-items: center; gap: 8px; min-width: 0; }
+.st-vm label span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.st-vmrow { display: flex; gap: 8px; margin-top: 6px; flex-wrap: wrap; }
+#stVmRecs { max-height: 180px; overflow-y: auto; gap: 4px; }
+.st-read { font-size: 12px; color: var(--muted); }
+.st-read summary { cursor: pointer; }
+.st-read div { max-height: 190px; overflow-y: auto; margin-top: 6px; padding: 8px; border: 1px solid var(--border); border-radius: 6px; font-size: 14px; line-height: 1.55; color: var(--text); white-space: pre-line; }
+#stMyVoice.busy { color: var(--accent2); border-color: var(--accent2); }
+
+/* Übersicht und Suchleiste: der ganze Song in einer Zeile, Klicken oder Ziehen springt, der Rahmen zeigt den sichtbaren Ausschnitt */
+.st-nav { flex: none; position: relative; height: 42px; border-top: 1px solid var(--border); background: var(--panel); cursor: pointer; }
+#stNavCanvas { position: absolute; inset: 0; width: 100%; height: 100%; display: block; }
+#stSeek { position: absolute; inset: 0; width: 100%; height: 100%; margin: 0; opacity: 0; cursor: pointer; }
+.st-nav:focus-within { outline: 2px solid var(--accent); outline-offset: -2px; }
+.st-navtime { position: absolute; right: 8px; top: 50%; transform: translateY(-50%); pointer-events: none; font-size: 11px; font-variant-numeric: tabular-nums; color: var(--muted); background: rgba(12, 14, 18, .7); padding: 1px 6px; border-radius: 4px; }

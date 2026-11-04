@@ -13,3 +13,6 @@ __pycache__/
 
 # Quelldatei des Logos (die App nutzt static/alphatester.png)
 274_Alphatester_Schrift.png
+
+# Werkzeuge
+.ruff_cache/

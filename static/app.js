@@ -222,8 +222,33 @@ function readForm() {
     title: d.title || "", prompt: d.prompt || "", style: d.style || "", lyrics: form.instrumental.checked ? "" : d.lyrics || "", instrumental: form.instrumental.checked, keep_caption: form.keep_caption.checked,
     duration: Number(form.duration.value), bpm: Number(form.bpm.value) <= Number(form.bpm.min) ? 0 : Number(form.bpm.value), keyscale: d.keyscale || "", timesignature: d.timesignature || "", vocal_language: form.instrumental.checked ? "" : d.vocal_language || "en",
     seed: num("seed", -1), variants: num("variants", 1),
+    voice_id: voice && !form.instrumental.checked ? voice.id : "", voice_name: voice && !form.instrumental.checked ? voice.name : "",
     inference_steps: Number(form.inference_steps.value), lm_temperature: Number(form.lm_temperature.value),
   };
+}
+
+// Stimme: Neue Songs übernehmen die Klangfarbe eines früheren Songs, bis sie im Formular entfernt wird. Der Seed kann das nicht,
+// denn das Sprachmodell würfelt davor jedes Mal neu (gemessen Nov. 2026: Stimmabdruck 0,91 mit gleichem Seed, 0,96 mit Referenz).
+let voice = null;
+try { voice = JSON.parse(localStorage.getItem("voice")); } catch {}
+function setVoice(v) {
+  voice = v;
+  try { localStorage.setItem("voice", JSON.stringify(v)); } catch {}
+  $("#voiceChip").hidden = !v;
+  if (v) $("#voiceName").textContent = t("voice_chip", v.name);
+}
+setVoice(voice);
+$("#voiceClear").addEventListener("click", () => { setVoice(null); render(); });
+const songName = (s) => (s.title || s.caption.split(",").slice(0, 3).join(",")) + (s.letter ? ` ${s.letter}` : "");
+async function toggleVoice(s) {
+  if (voice?.id === s.id) { setVoice(null); render(); return; }
+  try { await api(`/api/songs/${s.id}/voice`, { method: "POST" }); } catch (err) { alert(`${t("error")}: ${err.message}`); return; }
+  setVoice({ id: s.id, name: songName(s) });
+  form.instrumental.checked = false; syncLyrics();   // eine Stimme gibt es nur mit Gesang
+  $("#lyricsBox").open = true;
+  $("#lyricsBox").scrollIntoView({ block: "nearest", behavior: "smooth" });
+  announce(t("voice_on", voice.name));
+  render();
 }
 
 form.addEventListener("submit", async (e) => {
@@ -270,6 +295,7 @@ function fillForm(s) {
   form.vocal_language.value = p.vocal_language || "en";
   form.seed.value = p.seed;
   form.variants.value = 1; showDur();
+  if (p.voice_id) setVoice({ id: p.voice_id, name: p.voice_name || songName(s) });   // ohne Stimme im alten Song bleibt die gewählte stehen
   $("#advBox").open = true;
   window.scrollTo({ top: 0, behavior: "smooth" });
 }
@@ -584,6 +610,7 @@ function render() {
       p.inference_steps ? `${p.inference_steps}IT` : null,
       p.lm_temperature != null ? `${(+p.lm_temperature).toFixed(1)}VAR` : null,
       m.keyscale, m.duration && fmt(m.duration),
+      p.voice_name && t("voice_meta", p.voice_name),
     ].filter(Boolean).join(" · ");
     const playing = s.id === currentId && ws?.isPlaying();
     let left, state = "";
@@ -602,9 +629,11 @@ function render() {
       s.status === "done" && `<button class="sek icon ${s.favorite ? "on" : ""}" data-a="fav" title="${t("fav")}">${s.favorite ? "★" : "☆"}</button>`,
       s.status === "done" && `<a class="download icon fmt" href="${s.url}?download=1" title="${t("download")}">${exportFmt === "mp3" || s.file.endsWith(".mp3") ? "MP3" : "WAV"}</a>`,
       lyr && `<button class="sek icon txt ${openLyrics.has(s.id) ? "on" : ""}" data-a="lyrics" title="${t("show_lyrics")}">TXT</button>`,
+      lyr && s.file.toLowerCase().endsWith(".wav") && `<button class="sek icon ${voice?.id === s.id ? "on" : ""}" data-a="voice" aria-pressed="${voice?.id === s.id}" title="${t(voice?.id === s.id ? "voice_stop" : "voice_use")}"><svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5 11a7 7 0 0 0 14 0M12 18v3M9 21h6"/></svg></button>`,
       folders.folders.length > 0 && `<button class="sek icon" data-a="move" title="${t("move")}"><svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round" aria-hidden="true"><path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></svg></button>`,
-      `<button class="sek icon" data-a="more" title="${t("more")}">＋</button>`,
-      `<button class="sek icon" data-a="reuse" title="${t("reuse")}"><svg viewBox="0 0 24 24" width="15" height="15" fill="currentColor" aria-hidden="true"><path d="M12 3l7 7h-4v10h-6V10H5l7-7z"/></svg></button>`,
+      !p.studio && `<button class="sek icon" data-a="more" title="${t("more")}">＋</button>`,
+      !p.studio && `<button class="sek icon" data-a="reuse" title="${t("reuse")}"><svg viewBox="0 0 24 24" width="15" height="15" fill="currentColor" aria-hidden="true"><path d="M12 3l7 7h-4v10h-6V10H5l7-7z"/></svg></button>`,
+      s.status === "done" && s.file.toLowerCase().endsWith(".wav") && `<a class="sek icon" href="/studio?song=${s.id}" title="${t("st_open")}" aria-label="${t("st_open")}"><svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><path d="M4 7h16M4 12h16M4 17h16"/><rect x="7" y="5" width="3" height="4" rx="1" fill="currentColor"/><rect x="14" y="10" width="3" height="4" rx="1" fill="currentColor"/><rect x="9" y="15" width="3" height="4" rx="1" fill="currentColor"/></svg></a>`,
       ["error", "cancelled"].includes(s.status) && `<button class="sek icon" data-a="retry" title="${t("retry")}">↻</button>`,
       armedKey === `song:${s.id}`
         ? `<button class="sek icon del armed" data-a="del" data-arm="song:${s.id}" title="${t("del_q")}">?</button>`
@@ -642,6 +671,7 @@ $("#library").addEventListener("click", async (e) => {
   if (a === "reuse") return fillForm(s);
   if (a === "move") return moveMenu(btn, id);
   if (a === "lyrics") { openLyrics.has(id) ? openLyrics.delete(id) : openLyrics.add(id); return render(); }
+  if (a === "voice") return toggleVoice(s);
   if (a === "retry") await api(`/api/songs/${id}/retry`, { method: "POST" });
   if (a === "more") {
     const p = s.params;
@@ -862,17 +892,20 @@ async function checkHealth() {
 const dlg = $("#settingsDlg"), sf = $("#settingsForm");
 $("#btnSettings").onclick = async () => {
   const s = await api("/api/settings");
-  for (const k of ["server_url", "lm_url", "timeout_minutes", "songs_dir", "dit", "highs", "lm_device", "export_format"]) sf[k].value = s[k];
+  for (const k of ["server_url", "lm_url", "timeout_minutes", "songs_dir", "dit", "lyrics_model", "highs", "lm_device", "export_format"]) sf[k].value = s[k];
   sf.export_format.querySelector('option[value="mp3"]').disabled = !s.mp3_available;   // MP3 nur, wenn der Wandler der Engine da ist
   $("#expHint").hidden = s.mp3_available;
   sf.dit.querySelector('option[value="xl"]').disabled = !s.dit_xl_available;   // XL nur wählbar, wenn die Datei da ist
+  sf.dit.querySelector('option[value="xl_bf16"]').disabled = !s.dit_xl_bf16_available;
   $("#ditHint").hidden = s.dit_xl_available;
   sf.songs_dir.placeholder = s.songs_dir_default;   // Standard als Platzhalter, leer lassen = Standard
+  $("#verInfo").textContent = t("upd_installed", s.version || "?");
+  if (s.repo_url) $("#repoLink").href = s.repo_url;
   dlg.showModal();
 };
 const saveSettings = () => api("/api/settings", { method: "PUT", body: JSON.stringify({
   server_url: sf.server_url.value.trim(), lm_url: sf.lm_url.value.trim(), timeout_minutes: Number(sf.timeout_minutes.value) || 30,
-  songs_dir: sf.songs_dir.value.trim(), dit: sf.dit.value, highs: sf.highs.value, lm_device: sf.lm_device.value, export_format: sf.export_format.value }) }).catch((err) => { alert(err.message); $("#btnSettings").click(); });
+  songs_dir: sf.songs_dir.value.trim(), dit: sf.dit.value, lyrics_model: sf.lyrics_model.value.trim(), highs: sf.highs.value, lm_device: sf.lm_device.value, export_format: sf.export_format.value }) }).catch((err) => { alert(err.message); $("#btnSettings").click(); });
 // Anordnung: untereinander oder Generator links / Bibliothek rechts
 function setLayout(l) {
   document.querySelector(".wrap").classList.toggle("side", l === "side");
@@ -892,6 +925,7 @@ async function updCheck() {
   if (!r.behind) { updInfo.textContent = t("upd_current", r.current); return; }
   updInfo.textContent = t("upd_new", r.behind, r.current, r.latest);
   updList.replaceChildren(...r.changes.map(c => Object.assign(document.createElement("li"), { textContent: c })));
+  if (r.url) updList.append(Object.assign(document.createElement("li"), { className: "upd-link", innerHTML: `<a href="${esc(r.url)}" target="_blank" rel="noopener">${esc(r.name || r.latest)} ↗</a>` }));
   updList.hidden = false;
   if (r.dirty) { updInfo.className = "small err-t"; updInfo.textContent += t("upd_dirty"); return; }
   if (r.needs_install) updInfo.textContent += t("upd_install");
@@ -944,7 +978,7 @@ dlg.addEventListener("close", async () => { if (dlg.returnValue === "save") { aw
 // Sprachumschalter (DE | EN)
 $("#uiLang").addEventListener("change", (e) => setLang(e.target.value));
 document.addEventListener("langchange", () => {
-  showDur(); syncLyrics(); render(); renderFolders(); showLibStats(); checkHealth();
+  showDur(); syncLyrics(); setVoice(voice); render(); renderFolders(); showLibStats(); checkHealth();
   updInfo.textContent = ""; updList.hidden = true; updApply.hidden = true;
 });
 

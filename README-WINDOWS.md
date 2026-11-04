@@ -1,13 +1,9 @@
 # Music Generator für Windows
 
-> **Neu:** Für Windows gibt es jetzt auch eine **Desktop-App** ohne PowerShell und Git: Installer (MSI) laden und ausführen oder ZIP laden, entpacken, öffnen. Download und Anleitung: [Desktop-App-Anleitung.pdf](Desktop-App-Anleitung.pdf) und [github.com/rabbitfiremediacreation/music-generator-desktop/releases](https://github.com/rabbitfiremediacreation/music-generator-desktop/releases). Diese Seite beschreibt die Web-App mit Installer, die weiter gepflegt wird.
-
-Gleiche App wie auf dem Mac, Modellserver läuft über CUDA auf der NVIDIA-Grafikkarte.
+Gleiche App wie unter Linux und auf dem Mac, Modellserver läuft über CUDA auf der NVIDIA-Grafikkarte (AMD und Intel über Vulkan).
 Der Installer lädt die fertigen Windows-Programmdateien von acestep.cpp in einer festen, geprüften Version (kein Compiler nötig).
-
-Ausführliche Anleitung mit Bildern (Windows ab Seite 5): **[Installationsanleitung.pdf](Installationsanleitung.pdf)**, English: **[Installation-Guide-EN.pdf](Installation-Guide-EN.pdf)**, 中文: **[Installation-Guide-ZH.pdf](Installation-Guide-ZH.pdf)**
-
-Video zur Installation: **[youtu.be/se2g3tRFzrg](https://youtu.be/se2g3tRFzrg)**
+Der Windows-Installer stammt aus dem Ursprungsprojekt und ist hier unverändert übernommen; Songtexter und Studio laufen damit, **Meine Stimme** (Applio) gibt es bisher nur unter Linux.
+Für den Songtexter zusätzlich [Ollama](https://ollama.com) installieren und ein Modell laden, zum Beispiel `ollama pull gemma4:12b`.
 
 ## Installation
 
@@ -23,7 +19,7 @@ auf einer GTX 1060 (6 GB) dauert ein 30-Sekunden-Song etwa 1 Minute, ein 90-Seku
 2. In der PowerShell:
 
 ```powershell
-git clone https://github.com/rabbitfiremediacreation/music-generator.git $HOME\MusicGenerator
+git clone https://github.com/edgebird-lab/music-generator.git $HOME\MusicGenerator
 ```
 
 3. Im Ordner `MusicGenerator` die Datei **Windows-Install.bat** doppelklicken.
@@ -53,7 +49,7 @@ Optionen (in der PowerShell): `.\Windows-Install.ps1 -Yes`, `-LM 0.6B|1.7B|4B`, 
 
 ## Virenscanner schlägt Alarm
 
-Manche Virenscanner, zum Beispiel Norton mit der Meldung **„IDP.Generic"**, blocken `ace-server.exe` im Ordner `engine\acestep.cpp\build\Release`. Das ist eine Reputationserkennung und keine bekannte Schadsoftware: Die Datei ist neu, selten und nicht digital signiert. Es ist der Modellserver von acestep.cpp. Die Programmdateien stammen unverändert vom Autor von acestep.cpp. Wir haben einen auf Windows getesteten Satz als eigene Veröffentlichung abgelegt ([Releases](https://github.com/rabbitfiremediacreation/music-generator/releases), Version und Prüfsumme in `scripts\common.sh`). Der Installer lädt genau diesen Satz und bricht ab, wenn die Prüfsumme nicht stimmt.
+Manche Virenscanner, zum Beispiel Norton mit der Meldung **„IDP.Generic"**, blocken `ace-server.exe` im Ordner `engine\acestep.cpp\build\Release`. Das ist eine Reputationserkennung und keine bekannte Schadsoftware: Die Datei ist neu, selten und nicht digital signiert. Es ist der Modellserver von acestep.cpp. Die Programmdateien stammen unverändert vom Autor von acestep.cpp. Ein auf Windows getesteter Satz liegt als eigene Veröffentlichung in diesem Projekt ([Releases](https://github.com/edgebird-lab/music-generator/releases), Version und Prüfsumme in `scripts\common.sh`). Der Installer lädt genau diesen Satz und bricht ab, wenn die Prüfsumme nicht stimmt.
 
 Wenn du dem Projekt vertraust:
 1. Die Datei aus der Quarantäne wiederherstellen und den Programmordner von der Prüfung ausnehmen. Bei Norton: Einstellungen › Antivirus › Scans und Risiken › Von Scans ausschließen, außerdem bei Auto-Protect und SONAR.
@@ -90,4 +86,4 @@ Der Quellcode von acestep.cpp liegt offen auf [GitHub](https://github.com/Serveu
   bei Bedarf kleiner setzen (64) oder mit `.\Windows-Install.ps1 -LM 0.6B` ein kleineres Sprachmodell wählen, danach OFF und ON.
 - **Installer bricht bei „Python-Pakete der App“ ab:** Der Installer legt Python 3.12 fest, weil für das neueste
   Python (3.15) noch keine fertigen Pakete existieren. Falls uv trotzdem meckert: `uv python install 3.12` und erneut starten.
-- **Update in der App** holt wie auf dem Mac die neue Fassung von GitHub und startet neu.
+- **Update in der App** holt die neueste Veröffentlichung von GitHub und startet neu.

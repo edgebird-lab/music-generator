@@ -22,7 +22,7 @@ from starlette.middleware.trustedhost import TrustedHostMiddleware
 from pydantic import BaseModel, Field
 from starlette.background import BackgroundTask
 
-from . import db, updater
+from . import db, studio, texter, updater, voices
 from .engines import DIT_MODELS, EngineError, make_engine
 from .klang import hoehen_ausgleichen
 from .messages import tr
@@ -71,8 +71,49 @@ class WachHalten:
 _wach = WachHalten()
 
 
+async def run_job(sid: str) -> None:
+    job = db.one("SELECT * FROM songs WHERE id=? AND status='queued'", (sid,))
+    if not job:
+        return   # beim Warten auf die GPU abgebrochen
+    db.execute("UPDATE songs SET status='running', message='0:00', started_at=? WHERE id=?", (now(), sid))
+    engine = make_engine(db.get_settings())
+
+    async def progress(msg: str):
+        db.execute("UPDATE songs SET message=? WHERE id=? AND status='running'", (msg, sid))
+
+    try:
+        await texter.release()
+        params = json.loads(job["params"])
+        voice = await asyncio.to_thread(voices.read, params.get("voice_id"))
+        gen = asyncio.create_task(engine.generate(params, progress, voice))
+        _running.update(sid=sid, task=gen, engine=engine)
+        try:
+            audio, ext, meta = await gen
+        except asyncio.CancelledError:
+            if not gen.cancelled() or asyncio.current_task().cancelling():
+                raise                   # die App selbst wird beendet
+            await engine.cancel()       # vom Nutzer abgebrochen (Status steht schon auf "cancelled")
+            return
+        finally:
+            _running.clear()
+        if ext == "wav" and db.get_settings().get("highs") == "on":
+            audio = await asyncio.to_thread(hoehen_ausgleichen, audio)
+        fname = f"{sid}.{ext}"
+        (db.songs_dir() / fname).write_bytes(audio)
+        if db.one("SELECT status FROM songs WHERE id=?", (sid,))["status"] == "running":
+            db.execute(
+                "UPDATE songs SET status='done', message=NULL, file=?, engine=?, result_meta=?, finished_at=? WHERE id=?",
+                (fname, engine.name, json.dumps(meta), now(), sid),
+            )
+    except (EngineError, Exception) as e:  # noqa: BLE001 – Fehler landen sichtbar im UI
+        text = str(e) or e.__class__.__name__
+        if "ConnectError" in repr(e) or "connect" in text.lower():
+            text = f"Modellserver nicht erreichbar ({db.get_settings()['server_url']}). Läuft ace-server?"
+        db.execute("UPDATE songs SET status='error', message=?, finished_at=? WHERE id=?", (text, now(), sid))
+
+
 async def worker():
-    """Arbeitet die Queue strikt nacheinander ab (eine GPU, ein Job)."""
+    """Arbeitet die Queue strikt nacheinander ab (eine GPU, ein Job). Der Songtexter bekommt die GPU zwischen zwei Songs."""
     while True:
         job = db.one("SELECT * FROM songs WHERE status='queued' ORDER BY created_at, rowid LIMIT 1")
         if not job:
@@ -81,40 +122,8 @@ async def worker():
             await _wakeup.wait()
             continue
         _wach.an()
-        sid = job["id"]
-        db.execute("UPDATE songs SET status='running', message='0:00', started_at=? WHERE id=?", (now(), sid))
-        engine = make_engine(db.get_settings())
-
-        async def progress(msg: str):
-            db.execute("UPDATE songs SET message=? WHERE id=? AND status='running'", (msg, sid))
-
-        try:
-            params = json.loads(job["params"])
-            gen = asyncio.create_task(engine.generate(params, progress))
-            _running.update(sid=sid, task=gen, engine=engine)
-            try:
-                audio, ext, meta = await gen
-            except asyncio.CancelledError:
-                if not gen.cancelled() or asyncio.current_task().cancelling():
-                    raise                   # die App selbst wird beendet
-                await engine.cancel()       # vom Nutzer abgebrochen (Status steht schon auf "cancelled")
-                continue
-            finally:
-                _running.clear()
-            if ext == "wav" and db.get_settings().get("highs") == "on":
-                audio = await asyncio.to_thread(hoehen_ausgleichen, audio)
-            fname = f"{sid}.{ext}"
-            (db.songs_dir() / fname).write_bytes(audio)
-            if db.one("SELECT status FROM songs WHERE id=?", (sid,))["status"] == "running":
-                db.execute(
-                    "UPDATE songs SET status='done', message=NULL, file=?, engine=?, result_meta=?, finished_at=? WHERE id=?",
-                    (fname, engine.name, json.dumps(meta), now(), sid),
-                )
-        except (EngineError, Exception) as e:  # noqa: BLE001 – Fehler landen sichtbar im UI
-            text = str(e) or e.__class__.__name__
-            if "ConnectError" in repr(e) or "connect" in text.lower():
-                text = f"Modellserver nicht erreichbar ({db.get_settings()['server_url']}). Läuft ace-server?"
-            db.execute("UPDATE songs SET status='error', message=?, finished_at=? WHERE id=?", (text, now(), sid))
+        async with texter.gpu:
+            await run_job(job["id"])
 
 
 @asynccontextmanager
@@ -126,12 +135,15 @@ async def lifespan(app: FastAPI):
         subprocess.Popen(["bash", str(Path(__file__).resolve().parent.parent / "scripts" / "symbole.sh")],
                          stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
     task = asyncio.create_task(worker())
+    texter.watch_shutdown(studio.kill_processes)
     _wakeup.set()
     yield
     task.cancel()
+    await studio.shutdown()
+    await texter.shutdown()
 
 
-app = FastAPI(title="Music Generator", lifespan=lifespan)
+app = FastAPI(title="Music Generator · EdgeBird-Lab", version=updater.file_version() or "0", lifespan=lifespan)
 
 
 @app.exception_handler(Exception)
@@ -143,13 +155,15 @@ async def unexpected_error(request, exc):
 # Nur Aufrufe an localhost annehmen: schützt gegen DNS-Rebinding (fremde Domain, die auf 127.0.0.1 zeigt)
 app.add_middleware(TrustedHostMiddleware, allowed_hosts=["localhost", "127.0.0.1"])
 app.include_router(updater.router)
+app.include_router(texter.router)
+app.include_router(studio.router)
 
 
 @app.middleware("http")
 async def no_cache(request, call_next):
     """Oberfläche nie aus dem Browser-Cache laden, sonst sieht man alte Stände."""
     resp = await call_next(request)
-    if request.url.path == "/" or request.url.path.startswith("/static/"):
+    if request.url.path in ("/", "/studio") or request.url.path.startswith("/static/"):
         resp.headers["Cache-Control"] = "no-cache"
     return resp
 
@@ -175,6 +189,8 @@ class GenerateRequest(BaseModel):
     lm_temperature: float | None = None
     group_id: str | None = None    # für "weitere Variante" einer bestehenden Gruppe
     folder_id: str | None = None   # Ordner der Bibliothek, in dem die neuen Songs landen
+    voice_id: str = ""             # Stimme eines früheren Songs (siehe /api/songs/{sid}/voice), leer = das Modell wählt frei
+    voice_name: str = ""           # nur zur Anzeige
 
 
 class SongPatch(BaseModel):
@@ -223,6 +239,8 @@ async def generate(req: GenerateRequest, x_lang: str = Header("de")):
     caption = ", ".join(parts) if parts else req.caption.strip()
     if not caption:
         raise HTTPException(422, tr(x_lang, "no_prompt"))
+    if req.voice_id and not voices.exists(req.voice_id):
+        raise HTTPException(422, tr(x_lang, "voice_missing"))
     base = req.model_dump(exclude={"variants", "group_id", "folder_id", "instrumental", "title", "keep_caption"})
     base["caption"] = caption
     base["use_cot_caption"] = not req.keep_caption
@@ -285,6 +303,20 @@ async def retry_song(sid: str):
     db.execute("UPDATE songs SET status='queued', message=NULL WHERE id=? AND status IN ('error','cancelled')", (sid,))
     _wakeup.set()
     return get_song(sid)
+
+
+@app.post("/api/songs/{sid}/voice")
+async def use_voice(sid: str, x_lang: str = Header()):
+    """Merkt sich die Stimme eines fertigen Songs: Ein Ausschnitt wird zur Klangfarben-Referenz für neue Songs."""
+    r = db.one("SELECT file FROM songs WHERE id=? AND status='done' AND file IS NOT NULL", (sid,))
+    if not r:
+        raise HTTPException(404)
+    try:
+        await voices.create(sid, db.songs_dir() / r["file"])
+    except (OSError, ValueError) as e:
+        log.warning("Stimme aus %s nicht lesbar: %r", r["file"], e)
+        raise HTTPException(422, tr(x_lang, "voice_unreadable")) from e
+    return {"id": sid}
 
 
 @app.delete("/api/songs/{sid}")
@@ -444,7 +476,9 @@ def queue():
 @app.get("/api/settings")
 def get_settings():
     return {**db.get_settings(), "lm_device": db.lm_device(), "mp3_available": _mp3_tool() is not None, "songs_dir_default": str(db.SONGS_DIR),
-            "dit_xl_available": (db.MODELS_DIR / DIT_MODELS["xl"]).is_file()}
+            "dit_xl_available": (db.MODELS_DIR / DIT_MODELS["xl"]).is_file(),
+            "dit_xl_bf16_available": (db.MODELS_DIR / DIT_MODELS["xl_bf16"]).is_file(),
+            "version": updater.current_version(), "repo_url": updater.REPO_WEB}
 
 
 @app.put("/api/settings")
@@ -462,8 +496,10 @@ def put_settings(values: dict, x_lang: str = Header("de")):
     if "dit" in values:
         if values["dit"] not in DIT_MODELS:
             values["dit"] = "standard"
-        if values["dit"] == "xl" and not (db.MODELS_DIR / DIT_MODELS["xl"]).is_file():
+        if values["dit"] != "standard" and not (db.MODELS_DIR / DIT_MODELS[values["dit"]]).is_file():
             raise HTTPException(400, tr(x_lang, "xl_missing"))
+    if "lyrics_model" in values:
+        values["lyrics_model"] = str(values["lyrics_model"] or "").strip()
     if "highs" in values:
         values["highs"] = "on" if values["highs"] == "on" else "off"
     if "export_format" in values:
@@ -514,7 +550,9 @@ async def analyze(audio: UploadFile, x_lang: str = Header("de")):
         raise HTTPException(413, tr(x_lang, "too_big"))
     engine = make_engine(db.get_settings())
     try:
-        result = await engine.analyze(data, audio.filename or "upload")
+        async with texter.gpu:   # rechnet auf der GPU wie ein Song (siehe worker)
+            await texter.release()
+            result = await engine.analyze(data, audio.filename or "upload")
     except EngineError as e:
         raise HTTPException(502, str(e) or "Analyse fehlgeschlagen") from e
     return {
@@ -567,6 +605,11 @@ async def health():
 @app.get("/")
 def index():
     return FileResponse(STATIC / "index.html")
+
+
+@app.get("/studio")
+def studio_page():
+    return FileResponse(STATIC / "studio.html")
 
 
 app.mount("/static", StaticFiles(directory=STATIC), name="static")

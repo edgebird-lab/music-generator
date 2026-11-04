@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="color-scheme" content="dark">
-<title>Music Generator</title>
+<title>Music Generator · EdgeBird-Lab</title>
 <link rel="icon" type="image/svg+xml" href="/static/favicon.svg">
 <link rel="stylesheet" href="/static/style.css">
 </head>
@@ -31,8 +31,8 @@
       </svg>
       <div id="dzBubble" class="dz-bubble" role="status" aria-live="polite"></div>
     </div>
-    <a class="brand-link" href="https://alphatester.rabbitfire.de/" target="_blank" rel="noopener" title="Zur Alphatester-Webseite" data-i18n-title="brand_title">
-      <img class="brand" src="/static/alphatester.png" alt="Alphatester">
+    <a class="brand-link" href="https://github.com/edgebird-lab" target="_blank" rel="noopener" title="Zur edgebird-lab-Webseite" data-i18n-title="brand_title">
+      <img class="brand" src="/static/edgebird-lab.png" alt="edgebird-lab">
     </a>
     <div class="divider"></div>
     <h1 class="title"><span>MUSIC</span><span>GENERATOR</span></h1>
@@ -40,6 +40,7 @@
       <svg class="rec-mic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5 11a7 7 0 0 0 14 0M12 18v3M9 21h6"/></svg><span id="recTime" class="rec-time" aria-hidden="true"></span>
     </button>
     <div class="top-right">
+      <a href="/studio" class="sek mini" data-i18n="st_title">Studio</a>
       <select id="uiLang" class="langsw" aria-label="Language / Sprache" title="Language / Sprache"></select>
       <div id="status" class="box small" title="Modellserver">…</div>
       <button id="btnSettings" class="gear" title="Setup" aria-label="Setup">
@@ -93,14 +94,15 @@
 
       <details id="lyricsBox" title="Leer lassen: Das Modell schreibt eigene Lyrics. Die Sprache wählst du darunter (Standard: Englisch)." data-i18n-title="lyrics_tip">
         <summary><span><span data-i18n="lyrics">Lyrics</span> <span id="lyricsHint" class="sumhint"></span></span>
-          <span class="dice-wrap"><button type="button" id="lyricsDice" class="dice" title="Lyrics automatisch schreiben lassen (erst beim Generieren)" aria-label="Lyrics automatisch schreiben lassen" data-i18n-title="lyrics_dice" data-i18n-aria="lyrics_dice"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3.5" y="3.5" width="17" height="17" rx="4"/><circle cx="8.5" cy="8.5" r="1" fill="currentColor"/><circle cx="15.5" cy="8.5" r="1" fill="currentColor"/><circle cx="12" cy="12" r="1" fill="currentColor"/><circle cx="8.5" cy="15.5" r="1" fill="currentColor"/><circle cx="15.5" cy="15.5" r="1" fill="currentColor"/></svg></button></span>
+          <span class="dice-wrap"><button type="button" id="texterBtn" class="sek mini" title="Songtext mit der lokalen KI schreiben (normal oder ohne Filter) und hierher übernehmen" data-i18n-title="tx_open_tip" data-i18n="tx_open">Songtext schreiben</button><button type="button" id="lyricsDice" class="dice" title="Lyrics automatisch schreiben lassen (erst beim Generieren)" aria-label="Lyrics automatisch schreiben lassen" data-i18n-title="lyrics_dice" data-i18n-aria="lyrics_dice"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3.5" y="3.5" width="17" height="17" rx="4"/><circle cx="8.5" cy="8.5" r="1" fill="currentColor"/><circle cx="15.5" cy="8.5" r="1" fill="currentColor"/><circle cx="12" cy="12" r="1" fill="currentColor"/><circle cx="8.5" cy="15.5" r="1" fill="currentColor"/><circle cx="15.5" cy="15.5" r="1" fill="currentColor"/></svg></button></span>
         </summary>
         <div class="field lang"><span class="lbl" data-i18n="language">Sprache</span>
           <select name="vocal_language" aria-label="Sprache der Lyrics" data-i18n-aria="language_aria">
             <option value="en" selected data-i18n="en">Englisch</option><option value="de" data-i18n="de">Deutsch</option><option value="fr" data-i18n="fr">Französisch</option>
             <option value="es" data-i18n="es">Spanisch</option><option value="it" data-i18n="it">Italienisch</option><option value="pt" data-i18n="pt">Portugiesisch</option>
             <option value="ja" data-i18n="ja">Japanisch</option><option value="ko" data-i18n="ko">Koreanisch</option><option value="zh" data-i18n="zh">Chinesisch</option><option value="ru" data-i18n="ru">Russisch</option>
-          </select></div>
+          </select>
+          <span id="voiceChip" class="chip on voice-chip" hidden title="Neue Songs übernehmen diese Stimme, bis du sie entfernst." data-i18n-title="voice_tip"><span id="voiceName"></span><button type="button" id="voiceClear" aria-label="Stimme entfernen" title="Stimme entfernen" data-i18n-aria="voice_clear" data-i18n-title="voice_clear">×</button></span></div>
         <textarea name="lyrics" rows="7" placeholder="[verse]&#10;…&#10;&#10;[chorus]&#10;…"></textarea>
         <div class="chips" id="sectionChips"></div>
       </details>
@@ -173,6 +175,90 @@
   </section>
 </div>
 
+<aside id="texter" class="texter" hidden aria-labelledby="txHeading">
+  <header class="tx-head">
+    <h2 id="txHeading" class="col-title" data-i18n="tx_title">Songtexter</h2>
+    <span id="txModelState" class="tx-hint" role="status"></span>
+    <button type="button" id="txUnload" class="sek mini" hidden title="Grafikspeicher sofort freigeben. Beim nächsten Schreiben lädt das Modell von selbst neu." data-i18n-title="tx_unload_tip" data-i18n="tx_unload">Entladen</button>
+    <button type="button" id="txClose" class="sek icon" title="Schließen: Das Modell wird entladen" aria-label="Schließen: Das Modell wird entladen" data-i18n-title="tx_close" data-i18n-aria="tx_close">✕</button>
+  </header>
+  <div class="tx-body">
+    <div class="tx-mode">
+      <div class="seg tx-tabs" role="tablist" aria-label="Art des Songtexts" data-i18n-aria="tx_tone">
+        <button type="button" class="sek on" role="tab" data-tone="clean" aria-selected="true" data-i18n="tx_tab_clean">Normal</button>
+        <button type="button" class="sek" role="tab" data-tone="explicit" aria-selected="false" data-i18n="tx_tab_explicit">Ohne Filter</button>
+      </div>
+      <span class="tx-hint" id="txToneHint"></span>
+      <label class="field tx-model"><span class="lbl" data-i18n="tx_model">Modell</span><select id="txModel" aria-label="Modell" data-i18n-aria="tx_model"></select></label>
+    </div>
+    <details id="txSetup" open>
+      <summary data-i18n="tx_setup">Auftrag</summary>
+      <form id="txForm" autocomplete="off">
+        <label class="field"><span class="lbl" data-i18n="tx_theme">Worum geht es?</span>
+          <textarea name="theme" rows="3" placeholder="Abrechnung mit dem Ex-Chef, der mich nach zehn Jahren per WhatsApp gefeuert hat" data-i18n-ph="tx_theme_ph"></textarea></label>
+        <div class="field"><span class="lbl" data-i18n="tx_genre">Genre</span>
+          <div class="chips tx-chips" id="txFamilies"></div>
+          <div class="chips tx-chips" id="txGenres"></div>
+          <input name="custom_genre" placeholder="oder eigenes Genre, z. B. Polka-Metal" aria-label="Eigenes Genre" data-i18n-ph="tx_custom_ph" data-i18n-aria="tx_custom_ph">
+          <span class="tx-hint" id="txGuide"></span>
+        </div>
+        <label class="field"><span class="lbl" data-i18n="language">Sprache</span>
+          <select name="language"></select></label>
+        <div class="field" id="txHeatField"><div class="lblrow"><span class="lbl" data-i18n="tx_heat">Härtegrad</span><span class="tx-hint" id="txHeatName"></span></div>
+          <div class="slider" data-fmt="int">
+            <div class="fill"></div><div class="knob"><span></span></div>
+            <input name="heat" type="range" min="1" max="4" step="1" value="4" aria-label="Härtegrad" data-i18n-aria="tx_heat">
+          </div>
+          <span class="tx-hint" id="txHeatHint"></span>
+        </div>
+        <div class="field"><span class="lbl" data-i18n="tx_moods">Stimmung</span>
+          <div class="chips tx-chips" id="txMoods"></div></div>
+        <div class="field"><span class="lbl" title="Ziehen ändert die Reihenfolge, das Kreuz entfernt einen Abschnitt." data-i18n-title="tx_struct_tip" data-i18n="tx_struct">Aufbau</span>
+          <div class="chips tx-chips" id="txStruct"></div>
+          <div class="chips tx-chips tx-add" id="txAdd"></div></div>
+        <details id="txMore">
+          <summary data-i18n="tx_more">Feinheiten</summary>
+          <div class="grid">
+            <label class="field"><span class="lbl" data-i18n="tx_persp">Perspektive</span><select name="perspective"></select></label>
+            <label class="field"><span class="lbl" data-i18n="tx_rhyme">Reimschema</span><select name="rhyme"></select></label>
+            <label class="field"><span class="lbl" data-i18n="tx_title_wish">Titel vorgeben</span><input name="title" placeholder="optional" data-i18n-ph="title_ph"></label>
+          </div>
+          <label class="field"><span class="lbl" data-i18n="tx_extra">Zusatzwünsche</span>
+            <textarea name="extra" rows="2" placeholder="muss das Wort „Beton“ enthalten, Refrain als Frage" data-i18n-ph="tx_extra_ph"></textarea></label>
+          <div class="field"><span class="lbl" title="Niedriger = vorhersehbar, höher = wilder, zu hoch = zerfahren." data-i18n-title="tx_creativity_tip" data-i18n="tx_creativity">Kreativität</span>
+            <div class="slider" data-fmt="temp">
+              <div class="fill"></div><div class="knob"><span></span></div>
+              <input name="creativity" type="range" min="0.3" max="1.3" step="0.05" value="0.8" aria-label="Kreativität" data-i18n-aria="tx_creativity">
+            </div></div>
+        </details>
+      </form>
+    </details>
+    <div class="tx-go">
+      <button type="button" id="txGo" class="aktion big" data-i18n="tx_go">SONGTEXT SCHREIBEN</button>
+      <span id="txInfo" class="tx-hint" role="status"></span>
+    </div>
+    <div id="txOut" hidden>
+      <label class="field"><span class="lbl" data-i18n="title">Titel</span><input id="txTitle"></label>
+      <label class="field"><span class="lbl" data-i18n="style">Stil</span><input id="txStyle"></label>
+      <label class="field"><span class="lbl" data-i18n="lyrics">Lyrics</span>
+        <textarea id="txLyrics" rows="18" spellcheck="false"></textarea></label>
+      <div class="tx-actions">
+        <button type="button" id="txApply" class="aktion" data-i18n="tx_apply">IN DEN SONG ÜBERNEHMEN</button>
+        <span id="txDrag" class="sek tx-drag" draggable="true" title="Auf das Formular links ziehen: übernimmt Text, Titel, Stil, Sprache und Länge. Einzelne markierte Zeilen lassen sich direkt ins Lyrics-Feld ziehen." data-i18n-title="tx_drag_tip" data-i18n="tx_drag">⠿ Ziehen</span>
+        <button type="button" id="txCopy" class="sek" data-i18n="tx_copy">Kopieren</button>
+        <button type="button" id="txUndoBtn" class="sek" hidden data-i18n="tx_undo">↶ Rückgängig</button>
+      </div>
+      <div class="field"><span class="lbl" data-i18n="tx_section">Abschnitt neu schreiben</span>
+        <div class="chips tx-chips" id="txSections"></div></div>
+      <div class="field"><span class="lbl" data-i18n="tx_revise">Überarbeiten</span>
+        <div class="chips tx-chips" id="txWishes"></div>
+        <div class="tx-row"><input id="txWish" placeholder="Was soll anders werden?" aria-label="Was soll anders werden?" data-i18n-ph="tx_wish_ph" data-i18n-aria="tx_wish_ph">
+          <button type="button" id="txRevise" class="sek" data-i18n="tx_revise">Überarbeiten</button></div>
+      </div>
+    </div>
+  </div>
+</aside>
+
 <footer id="player" hidden>
   <div class="player-in">
     <button id="playBtn" class="aktion round" aria-label="Abspielen" data-i18n-aria="play">▶</button>
@@ -209,8 +295,11 @@
       <input name="timeout_minutes" type="number" min="1" max="600">
     </label>
     <label class="field"><span class="lbl" title="" data-i18n-title="dit_tip" data-i18n="dit">Klangmodell</span>
-      <select name="dit"><option value="standard" data-i18n="dit_standard">Standard</option><option value="xl" data-i18n="dit_xl">XL</option></select>
+      <select name="dit"><option value="standard" data-i18n="dit_standard">Standard</option><option value="xl" data-i18n="dit_xl">XL</option><option value="xl_bf16">XL BF16</option></select>
       <span class="small" id="ditHint" hidden data-i18n="dit_xl_missing"></span>
+    </label>
+    <label class="field"><span class="lbl" title="Ollama-Modell, das leere Lyrics schreibt. Leer lassen, dann erfindet das ACE-Step-Sprachmodell den Text.">Texter (Ollama)</span>
+      <input name="lyrics_model" type="text" placeholder="gemma4:26b">
     </label>
     <label class="field"><span class="lbl" title="" data-i18n-title="highs_tip" data-i18n="highs">Höhen ausgleichen</span>
       <select name="highs"><option value="off" data-i18n="highs_off">Aus</option><option value="on" data-i18n="highs_on">An</option></select>
@@ -228,7 +317,7 @@
         <button type="button" class="sek" data-layout="side" aria-pressed="false" title="Generator links, Bibliothek rechts (ab ca. 1000 px Breite)" data-i18n-title="side_tip" data-i18n="side">Nebeneinander</button>
       </div></div>
     <div class="field"><span class="lbl" data-i18n="version">Version</span>
-      <div class="upd-row"><button type="button" id="updCheck" class="sek" data-i18n="upd_check">Nach Updates suchen</button><span id="updInfo" class="small"></span></div>
+      <div class="upd-row"><span id="verInfo" class="small ver"></span><button type="button" id="updCheck" class="sek" data-i18n="upd_check">Nach Updates suchen</button><span id="updInfo" class="small"></span></div>
       <ul id="updList" class="upd-list" hidden></ul>
       <button type="button" id="updApply" class="aktion" hidden data-i18n="upd_apply">JETZT AKTUALISIEREN</button>
     </div>
@@ -236,7 +325,7 @@
       <div class="upd-row"><button type="button" id="stopBtn" class="sek danger" data-i18n="stop">Server stoppen</button><span id="stopInfo" class="small"></span></div>
     </div>
     <div class="field"><span class="lbl">GitHub</span>
-      <div class="upd-row"><a href="https://github.com/rabbitfiremediacreation/music-generator" target="_blank" rel="noopener" class="sek" data-i18n="github">GitHub</a><span class="small" data-i18n="github_info">Quellcode und Anleitung</span></div>
+      <div class="upd-row"><a id="repoLink" href="https://github.com/edgebird-lab/music-generator" target="_blank" rel="noopener" class="sek" data-i18n="github">GitHub</a><span class="small" data-i18n="github_info">Quellcode und Anleitung</span></div>
     </div>
     <div class="submit">
       <button value="cancel" class="sek" data-i18n="cancel">Abbrechen</button>
@@ -248,5 +337,6 @@
 <script src="/static/vendor/wavesurfer.min.js"></script>
 <script src="/static/i18n.js"></script>
 <script src="/static/app.js"></script>
+<script src="/static/texter.js"></script>
 </body>
 </html>

@@ -7,6 +7,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parent.parent
 DATA = ROOT / "data"
 SONGS_DIR = DATA / "songs"
+VOICES_DIR = DATA / "voices"   # Referenz-Ausschnitte für „Stimme verwenden“; bleiben, auch wenn der Song gelöscht wird
 MODELS_DIR = ROOT / "engine" / "acestep.cpp" / "models"
 DB_PATH = DATA / "music.db"
 
@@ -24,6 +25,13 @@ def _engine_conf() -> dict:
 
 
 _conf = _engine_conf()
+
+
+def engine_conf() -> dict:
+    """data/engine.conf frisch gelesen (Installer-Entscheidungen: Backend, Modelle, Texter-Modelle)."""
+    return _engine_conf()
+
+
 if _conf.get("LM_DEVICE") == "cpu":
     _conf["MODE"] = "split"   # Sprachmodell erzwungen auf der CPU (Einstellung oder Installer)
 
@@ -52,7 +60,8 @@ DEFAULT_SETTINGS = {
     "lm_model": _conf.get("LM_FILE", ""),     # leer = erstes Sprachmodell im Modellordner
     "poll_interval": 1.5,
     "timeout_minutes": 30,
-    "dit": "standard",                 # Klangmodell: "standard" (2B) oder "xl" (4B, braucht die XL-Datei)
+    "dit": "standard",                 # Klangmodell: "standard" (2B), "xl" (4B, braucht die XL-Datei) oder "xl_bf16" (4B, höhere Genauigkeit)
+    "lyrics_model": _conf.get("LYRICS_MODEL", "gemma4:26b"),   # Ollama-Modell, das leere Lyrics schreibt (vom Installer nach Grafikspeicher gewählt); leer = das ACE-Step-Sprachmodell erfindet sie
     "highs": "off",                    # Höhen ausgleichen: "on" hebt die Höhen an, die der Klang-Decoder verliert (app/klang.py)
     "export_format": "wav",            # Download/Export: "wav" (verlustfrei, wie erzeugt) oder "mp3" (umgewandelt, kleiner)
     "songs_dir": "",                   # leer = data/songs im Programmordner, sonst absoluter Pfad
@@ -110,6 +119,26 @@ def init():
             CREATE INDEX IF NOT EXISTS idx_songs_group ON songs(group_id);
             CREATE TABLE IF NOT EXISTS settings (key TEXT PRIMARY KEY, value TEXT NOT NULL);
             CREATE TABLE IF NOT EXISTS folders (id TEXT PRIMARY KEY, name TEXT NOT NULL, created_at TEXT NOT NULL);
+            CREATE TABLE IF NOT EXISTS studio_voice_models (
+                id          TEXT PRIMARY KEY,
+                name        TEXT NOT NULL,
+                status      TEXT NOT NULL,          -- training | ready | failed
+                message     TEXT,
+                seconds     REAL NOT NULL,          -- so viel Aufnahme lag dem Training zugrunde
+                epochs      INTEGER NOT NULL,
+                created_at  TEXT NOT NULL
+            );
+            CREATE TABLE IF NOT EXISTS studio_projects (id TEXT PRIMARY KEY, name TEXT NOT NULL, data TEXT NOT NULL, updated_at TEXT NOT NULL);
+            CREATE TABLE IF NOT EXISTS studio_assets (
+                id          TEXT PRIMARY KEY,
+                name        TEXT NOT NULL,
+                kind        TEXT NOT NULL,          -- song | vocals | instrumental | drums | bass | other | take
+                file        TEXT NOT NULL,          -- Dateiname unter data/studio
+                duration    REAL NOT NULL,
+                source_song TEXT,
+                parent      TEXT,                   -- aus welchem Medium diese Spur abgetrennt wurde
+                created_at  TEXT NOT NULL
+            );
             """
         )
         # Ordner der Bibliothek (nur in der App; die Dateien bleiben, wo sie sind). NULL = unsortiert
@@ -120,6 +149,7 @@ def init():
             _con.execute("ALTER TABLE songs ADD COLUMN started_at TEXT")
         # Nach einem Absturz hängengebliebene Jobs wieder einreihen
         _con.execute("UPDATE songs SET status='queued', message=NULL WHERE status='running'")
+        _con.execute("UPDATE studio_voice_models SET status='failed', message='interrupted' WHERE status='training'")
         _con.commit()
 
 

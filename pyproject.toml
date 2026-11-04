@@ -1,7 +1,7 @@
 [project]
-name = "musik"
-version = "0.1.0"
-description = "Lokaler Musik-Generator (Web-UI für ACE-Step 1.5 / acestep.cpp)"
+name = "music-generator"
+version = "1.0.0"
+description = "EdgeBird-Lab Music Generator: lokaler KI-Musikgenerator mit Songtexter und Studio (ACE-Step 1.5 / acestep.cpp, Ollama, Demucs, Applio)"
 requires-python = ">=3.11"
 dependencies = [
     "fastapi>=0.115",
