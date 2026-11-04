@@ -11,11 +11,11 @@ DIR="${MUSIC_GENERATOR_DIR:-$HOME/MusicGenerator}"
 command -v git >/dev/null 2>&1 || { echo "git fehlt. Bitte erst installieren, zum Beispiel: sudo apt install git  (Arch: sudo pacman -S git)"; exit 1; }
 if [ -d "$DIR/.git" ]; then
   echo "▸ $DIR gibt es schon: hole die neueste Veröffentlichung"
-  git -C "$DIR" fetch --quiet --tags origin
+  git -C "$DIR" fetch --quiet --force --tags origin
 else
   echo "▸ Lade den Music Generator nach $DIR"
   git clone --quiet "$REPO" "$DIR"
-  git -C "$DIR" fetch --quiet --tags origin
+  git -C "$DIR" fetch --quiet --force --tags origin
 fi
 latest=$(git -C "$DIR" tag -l 'v*' --sort=-v:refname | head -1)
 if [ -n "$latest" ]; then

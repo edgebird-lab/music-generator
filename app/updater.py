@@ -134,7 +134,7 @@ def _status(lang: str = "de") -> dict:
         return {"current": file_version() or "?", "latest": tag, "behind": 1, "ahead": 0, "dirty": False, "needs_install": False, "nogit": True,
                 "changes": _notes_lines(rel["notes"]) or [tr(lang, "nogit_change")], "name": rel["name"], "url": rel["url"]}
     _ensure_origin()
-    git("fetch", "--quiet", "--tags", "origin", timeout=60)
+    git("fetch", "--quiet", "--force", "--tags", "origin", timeout=60)   # --force: gleichnamige Tags aus dem Ursprungsprojekt dürfen ersetzt werden
     try:
         target = git("rev-parse", "--verify", f"refs/tags/{tag}^{{commit}}")
     except RuntimeError as e:
@@ -199,7 +199,7 @@ def _apply_nogit(s: dict) -> dict:
         git("init", "-q")   # ohne „-b“: ältere Git-Versionen (vor 2.28, z. B. alte Xcode-Kommandozeilenwerkzeuge) kennen die Option nicht
         git("symbolic-ref", "HEAD", f"refs/heads/{BRANCH}")
     _ensure_origin()
-    git("fetch", "--quiet", "--tags", "origin", timeout=180)
+    git("fetch", "--quiet", "--force", "--tags", "origin", timeout=180)
     git("checkout", "--quiet", "-B", BRANCH, f"refs/tags/{s['latest']}^{{commit}}", "--force")
     subprocess.run(["uv", "sync", "--quiet"], cwd=ROOT, check=True, timeout=300)
     return {**s, "current": current_version(), "needs_install": acestep_rev() != old_rev}

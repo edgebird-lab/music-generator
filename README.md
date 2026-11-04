@@ -79,7 +79,7 @@ Jeder Knopf und Regler ist beschriftet, Regler sagen ihren Wert im Klartext, Son
 
 ## Aktualisieren
 
-In der App: Zahnrad › **Nach Updates suchen** › **Jetzt aktualisieren**. Die App holt die **neueste Veröffentlichung** (GitHub-Release) dieses Repositorys, nicht irgendeinen Zwischenstand, und startet sich neu. Hat sich die Modellversion geändert, weist sie darauf hin, den Installer einmal laufen zu lassen. Von Hand: `cd ~/MusicGenerator && git fetch --tags && git merge --ff-only $(git tag -l 'v*' --sort=-v:refname | head -1) && ./install.sh`. Songs, Einstellungen und Studio-Projekte in `data/` bleiben erhalten.
+In der App: Zahnrad › **Nach Updates suchen** › **Jetzt aktualisieren**. Die App holt die **neueste Veröffentlichung** (GitHub-Release) dieses Repositorys, nicht irgendeinen Zwischenstand, und startet sich neu. Hat sich die Modellversion geändert, weist sie darauf hin, den Installer einmal laufen zu lassen. Von Hand: `cd ~/MusicGenerator && git fetch --force --tags && git merge --ff-only $(git tag -l 'v*' --sort=-v:refname | head -1) && ./install.sh`. Songs, Einstellungen und Studio-Projekte in `data/` bleiben erhalten.
 
 ## Deinstallieren
 
