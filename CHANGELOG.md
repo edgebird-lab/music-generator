@@ -2,6 +2,13 @@
 
 Die App holt Updates über die Veröffentlichungen auf GitHub (Zahnrad › Nach Updates suchen). Jede Veröffentlichung hat hier einen Abschnitt; die Aufzählungspunkte erscheinen in der App.
 
+## v1.1.0 · 4. November 2026
+
+- **Meine Stimme beim Erzeugen:** Im Generator lässt sich ein trainiertes Stimm-Modell wählen. Nach dem Erzeugen wird der Gesang abgetrennt, in diese Stimme umgewandelt und wieder abgemischt; der Song mit deiner Stimme liegt in der Bibliothek, das Original daneben als eigene Version („… · Original“). Gemessen: etwa eine Minute zusätzlich je Song (Trennen auf dem Prozessor, Umwandeln auf der Grafikkarte).
+- **Oktave automatisch:** „Auto“ vergleicht die Grundfrequenz des erzeugten Gesangs mit der deiner Aufnahmen und wählt −12, 0 oder +12 Halbtöne; im Grenzfall lieber eine Oktave tiefer als zu hoch. Dieselbe Automatik im Studio beim Umwandeln (Häkchen „Oktave automatisch wählen“) und beim Einsingen mit anschließender Umwandlung. Die Messwerte stehen in der Meldung und in den Song-Daten.
+- **Aufnahme als Klangfarbe:** Im Dialog „Meine Stimme“ lässt sich eine Aufnahme als Klangfarbe für das Musikmodell setzen (Annäherung).
+- Downloads des Originals heißen „…_original.wav“, im ZIP „… Original“.
+
 ## v1.0.0 · 4. November 2026
 
 Erste Veröffentlichung des EdgeBird-Lab Music Generators: aus der Web-Oberfläche „music-generator“ (ALPHATESTER, MIT) wurde ein komplettes lokales Musikstudio.

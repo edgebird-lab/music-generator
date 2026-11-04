@@ -147,6 +147,12 @@ def init():
         # Beginn der Berechnung (created_at ist der Zeitpunkt des Einreihens; wartende Songs würden sonst die Wartezeit mitzählen)
         if "started_at" not in [r["name"] for r in _con.execute("PRAGMA table_info(songs)")]:
             _con.execute("ALTER TABLE songs ADD COLUMN started_at TEXT")
+        # Meine Stimme: Grundfrequenz der Trainingsaufnahmen (für die Oktav-Automatik) und welche Aufnahmen es waren
+        cols = [r["name"] for r in _con.execute("PRAGMA table_info(studio_voice_models)")]
+        if "f0" not in cols:
+            _con.execute("ALTER TABLE studio_voice_models ADD COLUMN f0 REAL")
+        if "recordings" not in cols:
+            _con.execute("ALTER TABLE studio_voice_models ADD COLUMN recordings TEXT")
         # Nach einem Absturz hängengebliebene Jobs wieder einreihen
         _con.execute("UPDATE songs SET status='queued', message=NULL WHERE status='running'")
         _con.execute("UPDATE studio_voice_models SET status='failed', message='interrupted' WHERE status='training'")

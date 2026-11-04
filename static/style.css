@@ -343,6 +343,8 @@ dialog .col-title { margin-bottom: 18px; font-size: 13px; letter-spacing: .2em; 
 .field.lang { flex-direction: row; align-items: center; gap: 12px; margin: 4px 0 10px; }
 .field.lang .lbl { margin: 0; }
 .field.lang select { width: auto; min-width: 160px; }
+.field.lang.vc-field { flex-wrap: wrap; }
+.vc-field select[name=vc_pitch] { min-width: 96px; }
 
 /* Anordnung nebeneinander: Generator links, Bibliothek rechts (nur bei genug Breite) */
 .seg { display: inline-flex; gap: 0; }

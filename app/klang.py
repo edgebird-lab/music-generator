@@ -185,3 +185,78 @@ def beat_lage(ziel: np.ndarray, neu: np.ndarray, fs: int, bpm: float) -> tuple[f
     good = lags[values >= 0.9 * values.max()]
     best = int(good[int(np.argmin(np.abs(good)))])
     return best * ONSET_HOP / fs, float(max(0.0, corr[best]))
+
+
+# ---------------------------------------------------------------- Grundton (für „Meine Stimme“: Oktave automatisch wählen)
+_F0_FS = 16000      # Messung bei 16 kHz: reicht für 70-1000 Hz und ist zehnmal schneller
+_F0_WIN = 1024      # 64 ms Fenster
+_F0_HOP = 160       # 10 ms Schritt
+_F0_MIN, _F0_MAX = 70.0, 1000.0
+_F0_THRESHOLD = 0.15   # YIN: erste Stelle unter dieser Schwelle gilt als Periode
+
+
+def grundton(mono: np.ndarray, fs: int) -> np.ndarray:
+    """Grundfrequenz je stimmhaftem Fenster in Hz (YIN mit kumulativ normierter Differenzfunktion, blockweise über FFT).
+    Leise Fenster (unter 4 % der Spitze) und unperiodische zählen nicht. Für eine Oktav-Entscheidung reicht der Median."""
+    step = max(1, int(round(fs / _F0_FS)))
+    x = mono[: len(mono) // step * step].reshape(-1, step).mean(axis=1).astype(np.float32)
+    sr = fs / step
+    tau_min, tau_max = int(sr / _F0_MAX), int(sr / _F0_MIN)
+    span = _F0_WIN + tau_max
+    if len(x) < span + _F0_HOP:
+        return np.zeros(0)
+    peak = float(np.abs(x).max()) or 1.0
+    frames = np.lib.stride_tricks.sliding_window_view(x, span)[::_F0_HOP]
+    n_fft = 1 << int(np.ceil(np.log2(span + _F0_WIN)))
+    taus = np.arange(1, tau_max + 1)
+    out = []
+    for start in range(0, len(frames), 256):
+        b = frames[start:start + 256]
+        a = b[:, :_F0_WIN]
+        rms = np.sqrt((a ** 2).mean(axis=1))
+        # d[tau] = Σ (a[j] - b[j+tau])² = E0 + E_tau - 2·r[tau]; r über Kreuzkorrelation, E_tau über Summenreihen
+        r = np.fft.irfft(np.conj(np.fft.rfft(a, n_fft)) * np.fft.rfft(b, n_fft), n_fft)[:, :tau_max + 1]
+        c = np.concatenate([np.zeros((len(b), 1)), np.cumsum(b.astype(np.float64) ** 2, axis=1)], axis=1)
+        e_tau = c[:, taus + _F0_WIN] - c[:, taus]
+        d = c[:, _F0_WIN][:, None] + e_tau - 2 * r[:, 1:]
+        d = np.clip(d, 0, None)
+        cmnd = d * taus / (np.cumsum(d, axis=1) + 1e-12)          # kumulativ normiert: 1 bei kleinen tau, Minimum bei der Periode
+        for i in range(len(b)):
+            if rms[i] < 0.04 * peak:
+                continue
+            row = cmnd[i]
+            below = np.nonzero(row[tau_min - 1:tau_max] < _F0_THRESHOLD)[0]
+            if not len(below):
+                continue
+            t = tau_min - 1 + int(below[0])
+            while t + 1 < tau_max and row[t + 1] < row[t]:
+                t += 1
+            # Parabel durch die drei Punkte um das Minimum: Periode genauer als ein Abtastwert
+            if 0 < t < tau_max - 1:
+                y0, y1, y2 = row[t - 1], row[t], row[t + 1]
+                denom = y0 - 2 * y1 + y2
+                t_fine = t + (0.5 * (y0 - y2) / denom if denom else 0.0)
+            else:
+                t_fine = t
+            out.append(sr / (t_fine + 1))                            # taus beginnen bei 1: Index t entspricht tau = t + 1
+    return np.array(out)
+
+
+def grundton_median(pcm: np.ndarray, fs: int) -> float:
+    """Median der Grundfrequenz einer Aufnahme (Stereo wird gemittelt); 0, wenn nichts Stimmhaftes gefunden wurde."""
+    mono = pcm.astype(np.float32).mean(axis=1) if pcm.ndim == 2 else pcm.astype(np.float32)
+    f0 = grundton(mono, fs)
+    return float(np.median(f0)) if len(f0) >= 20 else 0.0
+
+
+def oktave_auto(f0_stimme: float, f0_gesang: float) -> int:
+    """Tonhöhenversatz in Halbtönen (-12, 0 oder +12) für die Umwandlung eines Gesangs in eine Stimme, deren Aufnahmen meist
+    Sprache sind. Gesungen liegt eine Stimme rund 7 Halbtöne über dem Sprechen (Männer sprechen um 110 Hz und singen um 200 Hz,
+    Frauen um 210 und 330 Hz). Berichtigt wird nur um 5: Zu hoch klingt gepresst, eine Oktave tiefer klingt meist noch natürlich,
+    im Grenzfall also lieber nach unten. Dann auf ganze Oktaven gerundet, denn nur die bleiben in der Tonart.
+    Beispiele: Mann (110 Hz) und Sängerin (350 Hz) → -12, tiefe Stimme (140 Hz) und Sängerin (295 Hz) → -12, Frau (210 Hz) und Sängerin (330 Hz) → 0,
+    Frau (220 Hz) und tiefer Sänger (120 Hz) → +12. Gemessen an echten Aufnahmen (Nov. 2026): Sprecher 140 Hz, Sprecherin 287 Hz, Sängerin 330 Hz."""
+    if f0_stimme <= 0 or f0_gesang <= 0:
+        return 0
+    halbtoene = 12 * math.log2(f0_stimme / f0_gesang) + 5
+    return int(max(-12, min(12, 12 * round(halbtoene / 12))))

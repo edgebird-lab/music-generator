@@ -103,6 +103,13 @@
             <option value="ja" data-i18n="ja">Japanisch</option><option value="ko" data-i18n="ko">Koreanisch</option><option value="zh" data-i18n="zh">Chinesisch</option><option value="ru" data-i18n="ru">Russisch</option>
           </select>
           <span id="voiceChip" class="chip on voice-chip" hidden title="Neue Songs übernehmen diese Stimme, bis du sie entfernst." data-i18n-title="voice_tip"><span id="voiceName"></span><button type="button" id="voiceClear" aria-label="Stimme entfernen" title="Stimme entfernen" data-i18n-aria="voice_clear" data-i18n-title="voice_clear">×</button></span></div>
+        <div class="field lang vc-field" id="vcField" hidden>
+          <span class="lbl" title="Nach dem Erzeugen wird der Gesang abgetrennt, in deine Stimme umgewandelt und wieder abgemischt. Das Original bleibt als eigene Version in der Bibliothek." data-i18n-title="vc_gen_tip" data-i18n="vm_title">Meine Stimme</span>
+          <select name="vc_model" aria-label="Meine Stimme" data-i18n-aria="vm_title"></select>
+          <select name="vc_pitch" aria-label="Tonhöhe" data-i18n-aria="vm_pitch" title="Tonhöhe in Halbtönen. Auto vergleicht den erzeugten Gesang mit deinen Aufnahmen und wählt die Oktave." data-i18n-title="vc_pitch_tip">
+            <option value="auto" data-i18n="vc_auto">Auto</option><option value="0">0</option><option value="-12">−12</option><option value="12">+12</option>
+          </select>
+        </div>
         <textarea name="lyrics" rows="7" placeholder="[verse]&#10;…&#10;&#10;[chorus]&#10;…"></textarea>
         <div class="chips" id="sectionChips"></div>
       </details>

@@ -203,7 +203,8 @@ Am Ende bleibt die Frage, ob sich der ganze Ärger wirklich gelohnt hat, und ich
     <h2 class="col-title" data-i18n="vm_convert_title">In meine Stimme umwandeln</h2>
     <p class="st-info" id="stConvertWhat"></p>
     <label class="field"><span class="lbl" data-i18n="vm_model">Stimm-Modell</span><select name="model"></select></label>
-    <div class="field"><div class="lblrow"><span class="lbl" data-i18n="vm_pitch">Tonhöhe</span><output id="stConvertPitch" class="st-info">0</output></div>
+    <label class="check" style="margin-bottom:12px"><input name="auto" type="checkbox" checked><span data-i18n="vm_auto">Oktave automatisch wählen</span></label>
+    <div class="field" id="stPitchField" hidden><div class="lblrow"><span class="lbl" data-i18n="vm_pitch">Tonhöhe</span><output id="stConvertPitch" class="st-info">0</output></div>
       <input name="pitch" type="range" min="-12" max="12" step="1" value="0" aria-label="Tonhöhe" data-i18n-aria="vm_pitch">
       <span class="st-info" data-i18n="vm_pitch_tip">In Halbtönen. Liegt der Gesang höher als deine Stimme, hier nach unten: Frau zu Mann etwa -12, Mann zu Frau etwa +12. Nur ganze Oktaven (-12, 0, +12) bleiben in der Tonart des Beats.</span></div>
     <label class="check"><input name="mute" type="checkbox" checked><span data-i18n="vm_mute">Originalspur stumm schalten</span></label>

@@ -26,7 +26,7 @@ from pydantic import BaseModel
 
 from . import db, texter, voices
 from .engines import make_engine
-from .klang import beat_raster, beat_tempo, einsaetze
+from .klang import beat_raster, beat_tempo, einsaetze, grundton_median, oktave_auto
 from .messages import tr
 
 log = logging.getLogger("uvicorn.error")
@@ -219,6 +219,20 @@ def delete_asset(aid: str, x_lang: str = Header()):
     _asset_path(a).unlink(missing_ok=True)
     db.execute("DELETE FROM studio_assets WHERE id=?", (aid,))
     return {"deleted": True}
+
+
+@router.post("/assets/{aid}/voice")
+async def asset_voice(aid: str, x_lang: str = Header()):
+    """Eine Aufnahme (oder Spur) als Klangfarben-Referenz für neue Songs im Generator: ACE-Step bekommt sie beim Erzeugen mit.
+    Mit gesprochenen Aufnahmen nur eine Annäherung, das Modell kennt gesungene Stimmen."""
+    a = db.one("SELECT * FROM studio_assets WHERE id=?", (aid,))
+    if not a or not _asset_path(a).is_file():
+        raise HTTPException(404)
+    try:
+        await voices.create(aid, _asset_path(a))
+    except (OSError, ValueError) as e:
+        raise HTTPException(422, tr(x_lang, "voice_unreadable")) from e
+    return {"id": aid, "name": a["name"]}
 
 
 @router.get("/assets/{aid}/audio")
@@ -510,21 +524,114 @@ async def _train(jid: str, mid: str, recordings: list[dict], epochs: int, lang: 
         shutil.rmtree(data, ignore_errors=True)
 
 
-async def _convert(jid: str, asset: dict, mid: str, pitch: int, name: str, lang: str) -> None:
+def _read_pcm(path: Path) -> tuple["np.ndarray", int]:
+    with wave.open(str(path)) as w:
+        ch, fs = w.getnchannels(), w.getframerate()
+        pcm = np.frombuffer(w.readframes(w.getnframes()), dtype="<i2").reshape(-1, ch).astype(np.float32) / 32768.0
+    return pcm, fs
+
+
+def _model_f0(mid: str) -> float:
+    """Median-Grundfrequenz der Aufnahmen, mit denen das Stimm-Modell trainiert wurde (gemerkt in der Datenbank).
+    Ältere Modelle kennen ihre Aufnahmen nicht: dann die Aufnahme, deren Länge zur Trainingsdauer passt, sonst alle Aufnahmen."""
+    m = db.one("SELECT * FROM studio_voice_models WHERE id=?", (mid,))
+    if not m:
+        return 0.0
+    if m.get("f0"):
+        return float(m["f0"])
+    ids = json.loads(m["recordings"]) if m.get("recordings") else []
+    recs = [a for a in (db.one("SELECT * FROM studio_assets WHERE id=?", (i,)) for i in ids) if a and _asset_path(a).is_file()]
+    if not recs:
+        alle = [a for a in db.query("SELECT * FROM studio_assets WHERE kind='recording'") if _asset_path(a).is_file()]
+        recs = [a for a in alle if abs(a["duration"] - (m["seconds"] or 0)) < 1.0] or alle
+    f0 = _f0_of(recs)
+    if f0:
+        db.execute("UPDATE studio_voice_models SET f0=? WHERE id=?", (f0, mid))
+    return f0
+
+
+def _f0_of(recordings: list[dict]) -> float:
+    """Gemeinsame Median-Grundfrequenz mehrerer Aufnahmen (nach Dauer gewichtet, indem die Messwerte zusammengelegt werden)."""
+    values = []
+    for a in recordings:
+        try:
+            pcm, fs = _read_pcm(_asset_path(a))
+        except (OSError, wave.Error, ValueError):
+            continue
+        from .klang import grundton
+        f0 = grundton(pcm.mean(axis=1), fs)
+        if len(f0):
+            values.append(f0)
+    if not values:
+        return 0.0
+    return float(np.median(np.concatenate(values)))
+
+
+def _auto_pitch(vocals: Path, mid: str) -> dict:
+    """Oktave für die Umwandlung: Grundton des Gesangs gegen den der Stimme. Liefert pitch samt Messwerten (fürs Protokoll und die Anzeige)."""
+    pcm, fs = _read_pcm(vocals)
+    f0_gesang = grundton_median(pcm, fs)
+    f0_stimme = _model_f0(mid)
+    pitch = oktave_auto(f0_stimme, f0_gesang)
+    log.info("Meine Stimme: Automatik Stimme %.0f Hz, Gesang %.0f Hz -> %+d Halbtöne", f0_stimme, f0_gesang, pitch)
+    return {"pitch": pitch, "auto": True, "f0_voice": round(f0_stimme), "f0_vocals": round(f0_gesang)}
+
+
+async def _rvc_infer(src: Path, dst: Path, mid: str, pitch: int) -> None:
+    """Gesang in die Stimme eines Modells umwandeln (Applio). Der Aufrufer hält das GPU-Schloss."""
+    core, env = _applio()
+    pth, index = _model_files(mid)
+    await _run(*core, "infer", "--input-path", str(src), "--output-path", str(dst), "--pth-path", str(pth), "--index-path", str(index or ""),
+               "--pitch", str(pitch), "--index-rate", "0.5", "--protect", "0.33", "--volume-envelope", "0.0", "--f0-method", "rmvpe", "--export-format", "WAV", "--embedder-model", "contentvec",
+               env=env, cwd=APPLIO)
+    if not dst.is_file():
+        raise RuntimeError("Applio hat kein Ergebnis geliefert. / Applio returned no result.")
+
+
+def vc_ready(mid: str) -> dict | None:
+    """Das Stimm-Modell, wenn es fertig trainiert und Applio eingerichtet ist."""
+    if not (VC_PY.is_file() and (APPLIO / "core.py").is_file()):
+        return None
+    return db.one("SELECT * FROM studio_voice_models WHERE id=? AND status='ready'", (mid,))
+
+
+async def eigene_stimme(song: Path, mid: str, pitch: int | None, lang: str, progress) -> tuple[bytes, dict]:
+    """Die ganze Kette für einen frisch erzeugten Song: Gesang abtrennen (Demucs), in die Stimme umwandeln (Applio), wieder mit dem Beat
+    mischen. pitch None = Oktave automatisch. Der Aufrufer (die Warteschlange) hält das GPU-Schloss. Liefert das WAV und die Angaben dazu."""
+    MEDIA.mkdir(parents=True, exist_ok=True)
+    work = Path(tempfile.mkdtemp(dir=MEDIA))
+    try:
+        await progress(tr(lang, "vc_separating"))
+        async with _stems_lock:
+            await _ensure_stems_env({"message": ""}, lang)
+            await _run(str(STEMS_PY), str(STEMS_SCRIPT), str(song), str(work), "2", env={"TORCH_HOME": str(STEMS_ENV / "torch")})
+        vocals, instrumental = work / "vocals.wav", work / "instrumental.wav"
+        info = await asyncio.to_thread(_auto_pitch, vocals, mid) if pitch is None else {"pitch": int(pitch), "auto": False}
+        await progress(tr(lang, "vc_converting"))
+        converted = work / "converted.wav"
+        await _rvc_infer(vocals, converted, mid, info["pitch"])
+        await progress(tr(lang, "vc_mixing"))
+        async with _stems_lock:
+            await _run(str(STEMS_PY), str(STEMS_SCRIPT), str(converted), str(work), "mix", str(instrumental), str(vocals), env={"TORCH_HOME": str(STEMS_ENV / "torch")})
+        info.update(json.loads((work / "mix.json").read_text()))
+        return (work / "mix.wav").read_bytes(), info
+    finally:
+        shutil.rmtree(work, ignore_errors=True)
+
+
+async def _convert(jid: str, asset: dict, mid: str, pitch, name: str, lang: str) -> None:
     job = _jobs[jid]
     target = MEDIA / f"{new_id()}.wav"
     try:
-        core, env = _applio()
-        pth, index = _model_files(mid)
+        _applio()
         job["message"] = tr(lang, "vm_queue")
         async with texter.gpu:
             await texter.release()
-            job["message"] = tr(lang, "vm_converting")
-            await _run(*core, "infer", "--input-path", str(_asset_path(asset)), "--output-path", str(target), "--pth-path", str(pth), "--index-path", str(index or ""),
-                       "--pitch", str(pitch), "--index-rate", "0.5", "--protect", "0.33", "--volume-envelope", "0.0", "--f0-method", "rmvpe", "--export-format", "WAV", "--embedder-model", "contentvec",
-                       env=env, cwd=APPLIO)
-        if not target.is_file():
-            raise RuntimeError(tr(lang, "vm_no_result"))
+            info = await asyncio.to_thread(_auto_pitch, _asset_path(asset), mid) if pitch == "auto" else {"pitch": int(pitch), "auto": False}
+            job.update(message=tr(lang, "vm_converting"), **info)
+            if info["pitch"]:
+                name += f" ({info['pitch']:+d})"
+            await _rvc_infer(_asset_path(asset), target, mid, info["pitch"])
         job.update(status="done", assets=[_add_asset(target, name, "converted", source_song=asset["source_song"], parent=asset["id"])], message="")
     except asyncio.CancelledError:
         target.unlink(missing_ok=True)
@@ -543,7 +650,7 @@ class VoiceModelIn(BaseModel):
 
 class ConvertIn(BaseModel):
     model: str
-    pitch: int = 0
+    pitch: int | str = "auto"      # Halbtöne oder "auto": Oktave aus dem Vergleich von Gesang und Stimme
 
 
 def _training_job(mid: str) -> str | None:
@@ -566,7 +673,9 @@ async def create_voice_model(p: VoiceModelIn, x_lang: str = Header()):
     if seconds < 30:
         raise HTTPException(422, tr(x_lang, "vm_too_short"))
     mid, jid, epochs = new_id(), new_id(), VC_EPOCHS.get(p.quality, VC_EPOCHS["good"])
-    db.execute("INSERT INTO studio_voice_models(id, name, status, seconds, epochs, created_at) VALUES(?,?,?,?,?,?)", (mid, p.name.strip()[:60] or "Meine Stimme", "training", seconds, epochs, now()))
+    f0 = await asyncio.to_thread(_f0_of, recordings)   # Grundton der Aufnahmen: für die Oktav-Automatik beim Umwandeln
+    db.execute("INSERT INTO studio_voice_models(id, name, status, seconds, epochs, created_at, f0, recordings) VALUES(?,?,?,?,?,?,?,?)",
+               (mid, p.name.strip()[:60] or "Meine Stimme", "training", seconds, epochs, now(), f0 or None, json.dumps([a["id"] for a in recordings])))
     _jobs[jid] = {"status": "running", "message": tr(x_lang, "vm_queue"), "assets": [], "model": mid}
     _start_job(jid, _train(jid, mid, recordings, epochs, x_lang))
     return {"job": jid, "id": mid}
@@ -591,11 +700,14 @@ async def convert_asset(aid: str, p: ConvertIn, x_lang: str = Header()):
     model = db.one("SELECT * FROM studio_voice_models WHERE id=? AND status='ready'", (p.model,))
     if not a or not _asset_path(a).is_file() or not model:
         raise HTTPException(404)
-    pitch = max(-24, min(24, p.pitch))
-    name = f"{a['name']} → {model['name']}" + (f" ({pitch:+d})" if pitch else "")
-    existing = db.one("SELECT * FROM studio_assets WHERE parent=? AND kind='converted' AND name=?", (aid, name))
-    if existing and _asset_path(existing).is_file():
-        return {"job": None, "status": "done", "assets": [existing]}
+    pitch = "auto" if p.pitch == "auto" else max(-24, min(24, int(p.pitch)))
+    name = f"{a['name']} → {model['name']}"
+    if pitch != "auto":
+        if pitch:
+            name += f" ({pitch:+d})"
+        existing = db.one("SELECT * FROM studio_assets WHERE parent=? AND kind='converted' AND name=?", (aid, name))
+        if existing and _asset_path(existing).is_file():
+            return {"job": None, "status": "done", "assets": [existing]}
     jid = new_id()
     _jobs[jid] = {"status": "running", "message": tr(x_lang, "vm_queue"), "assets": []}
     _start_job(jid, _convert(jid, a, p.model, pitch, name, x_lang))

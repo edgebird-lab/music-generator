@@ -223,6 +223,7 @@ function readForm() {
     duration: Number(form.duration.value), bpm: Number(form.bpm.value) <= Number(form.bpm.min) ? 0 : Number(form.bpm.value), keyscale: d.keyscale || "", timesignature: d.timesignature || "", vocal_language: form.instrumental.checked ? "" : d.vocal_language || "en",
     seed: num("seed", -1), variants: num("variants", 1),
     voice_id: voice && !form.instrumental.checked ? voice.id : "", voice_name: voice && !form.instrumental.checked ? voice.name : "",
+    vc_model: form.instrumental.checked ? "" : form.vc_model.value, vc_pitch: form.vc_pitch.value,
     inference_steps: Number(form.inference_steps.value), lm_temperature: Number(form.lm_temperature.value),
   };
 }
@@ -239,6 +240,28 @@ function setVoice(v) {
 }
 setVoice(voice);
 $("#voiceClear").addEventListener("click", () => { setVoice(null); render(); });
+// Meine Stimme: Stimm-Modell (Applio), in das der Gesang nach dem Erzeugen umgewandelt wird. Auswahl und Tonhöhe bleiben gespeichert.
+let vcModels = [], vcSaved = {};
+try { vcSaved = JSON.parse(localStorage.getItem("vc") || "{}"); } catch {}
+async function loadVoiceModels() {
+  try {
+    const r = await api("/api/studio/voice-models");
+    vcModels = r.available ? r.models.filter((m) => m.status === "ready") : [];
+  } catch { vcModels = []; }
+  const keep = form.vc_model.value || vcSaved.model;
+  form.vc_model.replaceChildren(new Option(t("vc_none"), ""), ...vcModels.map((m) => new Option(m.name, m.id)));
+  if (vcModels.some((m) => m.id === keep)) form.vc_model.value = keep;
+  if (vcSaved.pitch && [...form.vc_pitch.options].some((o) => o.value === vcSaved.pitch)) form.vc_pitch.value = vcSaved.pitch;
+  $("#vcField").hidden = !vcModels.length;
+  syncVc();
+}
+function syncVc() {
+  form.vc_pitch.hidden = !form.vc_model.value;
+  vcSaved = { model: form.vc_model.value, pitch: form.vc_pitch.value };
+  try { localStorage.setItem("vc", JSON.stringify(vcSaved)); } catch {}
+}
+form.vc_model.addEventListener("change", () => { syncVc(); if (form.vc_model.value) { form.instrumental.checked = false; syncLyrics(); } });
+form.vc_pitch.addEventListener("change", syncVc);
 const songName = (s) => (s.title || s.caption.split(",").slice(0, 3).join(",")) + (s.letter ? ` ${s.letter}` : "");
 async function toggleVoice(s) {
   if (voice?.id === s.id) { setVoice(null); render(); return; }
@@ -296,6 +319,7 @@ function fillForm(s) {
   form.seed.value = p.seed;
   form.variants.value = 1; showDur();
   if (p.voice_id) setVoice({ id: p.voice_id, name: p.voice_name || songName(s) });   // ohne Stimme im alten Song bleibt die gewählte stehen
+  setSelect(form.vc_model, p.vc_model || ""); form.vc_pitch.value = p.vc_pitch && [...form.vc_pitch.options].some((o) => o.value === p.vc_pitch) ? p.vc_pitch : "auto"; syncVc();
   $("#advBox").open = true;
   window.scrollTo({ top: 0, behavior: "smooth" });
 }
@@ -604,13 +628,14 @@ function render() {
   lib.innerHTML = songs.map((s, i) => {
     const m = s.result_meta || {}, p = s.params || {};
     const newGroup = i > 0 && songs[i - 1].group_id !== s.group_id;
-    const title = (s.title || s.caption.split(",").slice(0, 3).join(",")) + (s.letter ? ` ${s.letter}` : "");
+    const title = (s.title || s.caption.split(",").slice(0, 3).join(",")) + (s.letter ? ` ${s.letter}` : "") + (p.vc_original_of ? ` · ${t("vc_original")}` : "");
     const meta = [
       m.bpm && `${m.bpm}BPM`,
       p.inference_steps ? `${p.inference_steps}IT` : null,
       p.lm_temperature != null ? `${(+p.lm_temperature).toFixed(1)}VAR` : null,
       m.keyscale, m.duration && fmt(m.duration),
       p.voice_name && t("voice_meta", p.voice_name),
+      p.vc_name && (m.vc_error ? t("vc_failed_meta") : t("vc_meta", p.vc_name, m.vc?.auto ? m.vc.pitch : null)),
     ].filter(Boolean).join(" · ");
     const playing = s.id === currentId && ws?.isPlaying();
     let left, state = "";
@@ -644,7 +669,7 @@ function render() {
       <div style="min-width:0">${s.id === editingId
         ? `<input class="t-edit" data-id="${s.id}" value="${esc(s.title || "")}" placeholder="${esc(s.caption.split(",").slice(0, 3).join(","))}">`
         : `<div class="t" data-a="rename" role="heading" aria-level="3" title="${t("rename")}">${esc(title)}</div>`
-      }<div class="m" title="${t("meta_tip")}">${esc(meta)}</div>${state}</div>
+      }<div class="m" title="${esc(meta)} · ${t("meta_tip")}">${esc(meta)}</div>${state}</div>
       <div class="actions">${actions}</div>${lyr && openLyrics.has(s.id)
         ? `<div class="lyr-wrap"><pre class="lyr">${esc(lyr)}</pre><a class="download mini lyr-dl" download="${esc((title || s.id).replace(/[\\/:*?"<>|]+/g, "_"))}.txt" href="data:text/plain;charset=utf-8,${encodeURIComponent(lyr)}" title="${t("lyrics_dl")}">TXT ↓</a></div>`
         : ""}</div>`;
@@ -978,11 +1003,12 @@ dlg.addEventListener("close", async () => { if (dlg.returnValue === "save") { aw
 // Sprachumschalter (DE | EN)
 $("#uiLang").addEventListener("change", (e) => setLang(e.target.value));
 document.addEventListener("langchange", () => {
-  showDur(); syncLyrics(); setVoice(voice); render(); renderFolders(); showLibStats(); checkHealth();
+  showDur(); syncLyrics(); setVoice(voice); loadVoiceModels(); render(); renderFolders(); showLibStats(); checkHealth();
   updInfo.textContent = ""; updList.hidden = true; updApply.hidden = true;
 });
 
 checkHealth();
 setInterval(checkHealth, 15000);
 loadExportFmt().then(() => render());
+loadVoiceModels();
 refresh();

@@ -1124,7 +1124,7 @@ async function runTake() {
     const j = await waitJob(r.job);
     if (j.status === "error") throw new Error(j.message);
     await refreshAssets();
-    const a = convertTo ? await convertAsset(j.assets[0].id, convertTo, 0) : j.assets[0];
+    const a = convertTo ? await convertAsset(j.assets[0].id, convertTo, "auto") : j.assets[0];
     media.set(a.id, { meta: a });
     await loadAsset(a.id);
     edit(() => {
@@ -1137,7 +1137,7 @@ async function runTake() {
       sel = new Set([c.id]);
       selTrack = tr.id;
     });
-    info(t("st_take_done"));
+    info(t("st_take_done") + (convertTo ? convertNote() : ""));
   } catch (err) { jobFailed(err); }
   busy = false; syncButtons();
 }
@@ -1299,7 +1299,7 @@ function renderVoiceDlg() {
   const checked = new Set([...$("#stVmRecs").querySelectorAll("input:checked")].map((x) => x.value));
   const first = !$("#stVmRecs").dataset.ready;
   const recs = assets.filter((a) => a.kind === "recording");
-  $("#stVmRecs").innerHTML = recs.length ? recs.map((a) => `<div class="st-vm"><label><input type="checkbox" value="${a.id}" ${first || checked.has(a.id) || a.id === lastVoiceRec ? "checked" : ""}><span>${esc(a.name)}</span></label><span class="m">${fmtShort(a.duration)}</span><span></span></div>`).join("") : `<div class="st-none">${esc(t("vm_none_recs"))}</div>`;
+  $("#stVmRecs").innerHTML = recs.length ? recs.map((a) => `<div class="st-vm"><label><input type="checkbox" value="${a.id}" ${first || checked.has(a.id) || a.id === lastVoiceRec ? "checked" : ""}><span>${esc(a.name)}</span></label><span class="m">${fmtShort(a.duration)}</span><button type="button" class="sek mini ref" data-ref="${a.id}" title="${esc(t("vm_voice_ref_tip"))}">${esc(t("vm_voice_ref"))}</button></div>`).join("") : `<div class="st-none">${esc(t("vm_none_recs"))}</div>`;
   $("#stVmRecs").dataset.ready = "1";
   if (!voiceForm.name.value) voiceForm.name.value = t("vm_default_name");
   updateVoiceEstimate();
@@ -1342,6 +1342,15 @@ function watchTraining(jid, name) {
 $("#stMyVoice").addEventListener("click", async () => { await refreshAssets(); await refreshVoiceModels(); voiceDlg.showModal(); });
 $("#stVmClose").addEventListener("click", () => { if (voiceRec) stopVoiceRecording(); voiceDlg.close(); });
 $("#stVmRecs").addEventListener("change", updateVoiceEstimate);
+$("#stVmRecs").addEventListener("click", async (e) => {
+  const b = e.target.closest("[data-ref]");
+  if (!b) return;
+  try {
+    const r = await api(`/api/studio/assets/${b.dataset.ref}/voice`, { method: "POST" });
+    try { localStorage.setItem("voice", JSON.stringify({ id: r.id, name: r.name })); } catch {}
+    $("#stVmStatus").className = "st-info"; $("#stVmStatus").textContent = t("vm_voice_ref_done", r.name);
+  } catch (err) { $("#stVmStatus").className = "st-info err"; $("#stVmStatus").textContent = err.message; }
+});
 voiceForm.quality.addEventListener("change", updateVoiceEstimate);
 $("#stVmList").addEventListener("click", async (e) => {
   const row = e.target.closest("button") && e.target.closest("[data-m]");
@@ -1388,6 +1397,7 @@ async function stopVoiceRecording() {
 }
 // Umwandeln
 const convertDlg = $("#stConvertDlg"), convertForm = $("#stConvertForm");
+let lastConvert = null;   // Angaben der letzten Umwandlung (Tonhöhe, Messwerte der Automatik)
 async function convertAsset(aid, model, pitch) {
   let r = await api(`/api/studio/assets/${aid}/convert`, { method: "POST", body: JSON.stringify({ model, pitch }) });
   if (r.job) {
@@ -1395,9 +1405,12 @@ async function convertAsset(aid, model, pitch) {
     if (j.status === "error") throw new Error(j.message);
     r = j;
   }
+  lastConvert = r;
   await refreshAssets();
   return r.assets[0];
 }
+const convertNote = () => (lastConvert?.auto ? " " + t("vm_auto_result", lastConvert.pitch, lastConvert.f0_voice, lastConvert.f0_vocals) : "");
+convertForm.auto.addEventListener("change", () => { $("#stPitchField").hidden = convertForm.auto.checked; });
 $("#stConvert").addEventListener("click", async () => {
   const c = selected()[0];
   if (!c) return;
@@ -1411,7 +1424,7 @@ $("#stConvert").addEventListener("click", async () => {
 convertForm.pitch.addEventListener("input", () => { const v = +convertForm.pitch.value; $("#stConvertPitch").textContent = v > 0 ? `+${v}` : v; });
 $("#stConvertCancel").addEventListener("click", () => convertDlg.close());
 $("#stConvertGo").addEventListener("click", async () => {
-  const c = selected()[0], model = convertForm.model.value, pitch = +convertForm.pitch.value, mute = convertForm.mute.checked;
+  const c = selected()[0], model = convertForm.model.value, pitch = convertForm.auto.checked ? "auto" : +convertForm.pitch.value, mute = convertForm.mute.checked;
   convertDlg.close();
   if (!c) return;
   busy = true; syncButtons();
@@ -1430,7 +1443,7 @@ $("#stConvertGo").addEventListener("click", async () => {
       sel = new Set([nc.id]);
       selTrack = tr.id;
     });
-    info(t("vm_converted"));
+    info(t("vm_converted") + convertNote());
   } catch (err) { jobFailed(err); }
   busy = false; syncButtons();
 });

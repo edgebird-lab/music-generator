@@ -12,7 +12,7 @@ import tempfile
 import uuid
 import zipfile
 from contextlib import asynccontextmanager
-from datetime import datetime
+from datetime import datetime, timedelta
 from pathlib import Path
 
 from fastapi import FastAPI, Header, HTTPException, UploadFile
@@ -100,16 +100,60 @@ async def run_job(sid: str) -> None:
             audio = await asyncio.to_thread(hoehen_ausgleichen, audio)
         fname = f"{sid}.{ext}"
         (db.songs_dir() / fname).write_bytes(audio)
-        if db.one("SELECT status FROM songs WHERE id=?", (sid,))["status"] == "running":
-            db.execute(
-                "UPDATE songs SET status='done', message=NULL, file=?, engine=?, result_meta=?, finished_at=? WHERE id=?",
-                (fname, engine.name, json.dumps(meta), now(), sid),
-            )
+        if db.one("SELECT status FROM songs WHERE id=?", (sid,))["status"] != "running":
+            return
+        # Meine Stimme: Gesang abtrennen, in die eigene Stimme umwandeln, wieder abmischen. Das Original bleibt als eigene Version.
+        if params.get("vc_model") and ext == "wav" and not _missing_vocals(meta.get("lyrics") or params.get("lyrics")):
+            try:
+                await _eigene_stimme(sid, job, params, fname, meta)
+            except asyncio.CancelledError:
+                raise
+            except Exception as e:  # noqa: BLE001 – der Song bleibt mit dem Originalgesang erhalten, der Fehler steht in den Metadaten
+                log.exception("Meine Stimme: Umwandlung für %s gescheitert", sid)
+                meta["vc_error"] = str(e) or e.__class__.__name__
+        db.execute(
+            "UPDATE songs SET status='done', message=NULL, file=?, engine=?, result_meta=?, finished_at=? WHERE id=?",
+            (fname, engine.name, json.dumps(meta), now(), sid),
+        )
     except (EngineError, Exception) as e:  # noqa: BLE001 – Fehler landen sichtbar im UI
         text = str(e) or e.__class__.__name__
         if "ConnectError" in repr(e) or "connect" in text.lower():
             text = f"Modellserver nicht erreichbar ({db.get_settings()['server_url']}). Läuft ace-server?"
         db.execute("UPDATE songs SET status='error', message=?, finished_at=? WHERE id=?", (text, now(), sid))
+
+
+def _missing_vocals(lyrics) -> bool:
+    return not re.search(r"\w", re.sub(r"\[[^\]]*\]", "", str(lyrics or "")))
+
+
+async def _eigene_stimme(sid: str, job: dict, params: dict, fname: str, meta: dict) -> None:
+    """Nachbearbeitung eines fertigen Songs mit „Meine Stimme“: Das Original wird als zweite Version derselben Gruppe abgelegt (eine
+    Sekunde früher, damit der umgewandelte Song in der Bibliothek obenauf liegt), der Song selbst bekommt den umgewandelten Gesang.
+    Gemessen (RX 7900 XTX, 16 Kerne, Song von 3:44): Trennen 39 s auf dem Prozessor, Umwandeln 26 s auf der Grafikkarte, Mischen 1 s."""
+    lang = params.get("lang") or "de"
+    src = db.songs_dir() / fname
+    job = db.one("SELECT * FROM songs WHERE id=?", (sid,))   # frisch lesen: started_at kam erst nach dem Einreihen dazu
+
+    async def progress(msg: str):
+        db.execute("UPDATE songs SET message=? WHERE id=? AND status='running'", (msg, sid))
+
+    pitch = None if params.get("vc_pitch", "auto") == "auto" else int(params["vc_pitch"])
+    audio, info = await studio.eigene_stimme(src, params["vc_model"], pitch, lang, progress)
+    # Original als eigene Version sichern
+    oid = uuid.uuid4().hex[:12]
+    oname = f"{oid}.wav"
+    (db.songs_dir() / oname).write_bytes(src.read_bytes())
+    oparams = {k: v for k, v in params.items() if k not in ("vc_model", "vc_pitch", "vc_name")}
+    oparams["vc_original_of"] = sid
+    earlier = (datetime.fromisoformat(job["created_at"]) - timedelta(seconds=1)).isoformat(timespec="seconds")
+    db.execute(
+        "INSERT INTO songs(id, group_id, created_at, started_at, finished_at, status, title, caption, lyrics, seed, params, result_meta, engine, file, folder_id) "
+        "VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)",
+        (oid, job["group_id"], earlier, job["started_at"], now(), "done", job["title"],
+         job["caption"], job["lyrics"], job["seed"], json.dumps(oparams), json.dumps(meta), "acestep_cpp", oname, job["folder_id"]),
+    )
+    src.write_bytes(audio)
+    meta["vc"] = {"model": params.get("vc_name", ""), **info, "original": oid}
 
 
 async def worker():
@@ -191,6 +235,9 @@ class GenerateRequest(BaseModel):
     folder_id: str | None = None   # Ordner der Bibliothek, in dem die neuen Songs landen
     voice_id: str = ""             # Stimme eines früheren Songs (siehe /api/songs/{sid}/voice), leer = das Modell wählt frei
     voice_name: str = ""           # nur zur Anzeige
+    vc_model: str = ""             # Meine Stimme: Stimm-Modell (Applio), in das der Gesang nach dem Erzeugen umgewandelt wird
+    vc_pitch: str = "auto"         # Halbtöne ("0", "-12", "12") oder "auto": Oktave aus dem Vergleich von Gesang und Stimme
+    vc_name: str = ""              # nur zur Anzeige (wird vom Server gesetzt)
 
 
 class SongPatch(BaseModel):
@@ -204,11 +251,18 @@ class FolderIn(BaseModel):
 
 
 def letters() -> dict:
-    """Versionen desselben Prompts heißen in Entstehungsreihenfolge A, B, C … (über alle Ordner hinweg)."""
+    """Versionen desselben Prompts heißen in Entstehungsreihenfolge A, B, C … (über alle Ordner hinweg).
+    Das Original eines mit „Meine Stimme“ umgewandelten Songs zählt nicht mit und trägt den Buchstaben seines Songs."""
     groups: dict = {}
-    for r in db.query("SELECT id, group_id FROM songs ORDER BY created_at, rowid"):
+    originals: dict = {}
+    for r in db.query("SELECT id, group_id, params FROM songs ORDER BY created_at, rowid"):
+        if '"vc_original_of"' in r["params"]:
+            originals[r["id"]] = json.loads(r["params"]).get("vc_original_of")
+            continue
         groups.setdefault(r["group_id"], []).append(r["id"])
-    return {sid: chr(65 + i) for ids in groups.values() if len(ids) > 1 for i, sid in enumerate(ids) if i < 26}
+    out = {sid: chr(65 + i) for ids in groups.values() if len(ids) > 1 for i, sid in enumerate(ids) if i < 26}
+    out.update({oid: out[main] for oid, main in originals.items() if main in out})
+    return out
 
 
 def folder_where(folder: str) -> tuple[str, list]:
@@ -245,6 +299,16 @@ async def generate(req: GenerateRequest, x_lang: str = Header("de")):
     base["caption"] = caption
     base["use_cot_caption"] = not req.keep_caption
     base["lyrics"] = lyrics
+    base["lang"] = x_lang   # für die Meldungen der Nachbearbeitung
+    base["vc_model"] = "" if req.instrumental else req.vc_model.strip()
+    if base["vc_model"]:
+        vm = studio.vc_ready(base["vc_model"])
+        if not vm:
+            raise HTTPException(422, tr(x_lang, "vc_missing" if (studio.VC_PY.is_file() and (studio.APPLIO / "core.py").is_file()) else "vc_not_set_up"))
+        base["vc_name"] = vm["name"]
+        base["vc_pitch"] = "auto" if req.vc_pitch == "auto" else str(max(-24, min(24, int(float(req.vc_pitch or 0)))))
+    else:
+        base["vc_name"], base["vc_pitch"] = "", "auto"
     folder = req.folder_id if req.folder_id and db.one("SELECT id FROM folders WHERE id=?", (req.folder_id,)) else None
     ids = []
     for i in range(req.variants):
@@ -394,7 +458,8 @@ def song_audio(sid: str, download: bool = False, x_lang: str = Header("de")):
     if download:
         base = r["title"] or r["caption"][:40]
         base = re.sub(r"[^\w\- ]+", "", base).strip().replace(" ", "_") or "song"
-        name = f"{base}_{r['seed']}{path.suffix}"
+        original = "_original" if '"vc_original_of"' in r["params"] else ""   # das Original eines mit „Meine Stimme“ umgewandelten Songs
+        name = f"{base}_{r['seed']}{original}{path.suffix}"
     return FileResponse(path, filename=name)
 
 
@@ -454,7 +519,7 @@ def download_zip(folder: str = "", x_lang: str = Header("de")):
     with zipfile.ZipFile(tmp, "w", zipfile.ZIP_STORED) as z:   # WAV und MP3 lassen sich kaum packen -> nur bündeln
         for r in rows:
             path = _export_file(r, x_lang)
-            base = " ".join(x for x in (clean(r["title"] or r["caption"][:40]) or "Song", lt.get(r["id"], "")) if x)
+            base = " ".join(x for x in (clean(r["title"] or r["caption"][:40]) or "Song", lt.get(r["id"], ""), "Original" if '"vc_original_of"' in r["params"] else "") if x)
             name = f"{base}{path.suffix}"
             if name.lower() in used:
                 name = f"{base} {r['seed']}{path.suffix}"

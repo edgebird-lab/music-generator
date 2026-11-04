@@ -6,6 +6,9 @@ Aufruf: stems.py <eingang.wav> <ausgabeordner> <2|4>
   4: zusätzlich drums.wav, bass.wav und other.wav statt des Instrumentals.
 Aufruf: stems.py <eingang.wav> <ausgabeordner> place <beat.wav> <bpm>
   Trennt den Gesang eines frisch erzeugten Songs und legt ihn auf einen vorhandenen Beat: vocals.wav und place.json (Versatz in Sekunden, Streckung, Güte).
+Aufruf: stems.py <umgewandelter_gesang.wav> <ausgabeordner> mix <instrumental.wav> <gesang_original.wav>
+  Mischt einen umgewandelten Gesang (z. B. Mono 40 kHz aus Applio) wieder mit dem Beat: Abtastrate und Länge werden angeglichen, die Lautstärke
+  an den ursprünglichen Gesang, Spitzen werden begrenzt. Ergebnis mix.wav und mix.json.
 Rechnet auf der CPU: Die GPU gehört ACE-Step und dem Texter, auf 16 Kernen dauert ein 3-Minuten-Song rund 30 Sekunden.
 """
 import json
@@ -47,8 +50,31 @@ def place(wav: np.ndarray, vocals: np.ndarray, rate: int, out: pathlib.Path, bea
     (out / "place.json").write_text(json.dumps({"shift": shift, "ratio": ratio, "quality": quality, "bpm": tempo_target, "own_bpm": tempo_own}))
 
 
+def mix(conv_path: pathlib.Path, out: pathlib.Path, instr_path: str, orig_vocals_path: str) -> None:
+    """Umgewandelter Gesang plus Beat = neuer Song. Der Pegel des neuen Gesangs wird dem des alten angeglichen (RMS, höchstens ±12 dB)."""
+    instr, rate = sf.read(instr_path, dtype="float32", always_2d=True)
+    conv, crate = sf.read(conv_path, dtype="float32", always_2d=True)
+    orig, _ = sf.read(orig_vocals_path, dtype="float32", always_2d=True)
+    if crate != rate:
+        conv = torchaudio.functional.resample(torch.from_numpy(conv.T), crate, rate).numpy().T
+    if conv.shape[1] != instr.shape[1]:
+        conv = np.repeat(conv.mean(axis=1, keepdims=True), instr.shape[1], axis=1)
+    conv = conv[:len(instr)]
+    conv = np.pad(conv, ((0, len(instr) - len(conv)), (0, 0)))
+    rms = lambda a: float(np.sqrt((a ** 2).mean()) + 1e-9)   # noqa: E731
+    gain = float(np.clip(rms(orig) / rms(conv), 0.25, 4.0))
+    mixed = instr + conv * gain
+    peak = float(np.abs(mixed).max())
+    limit = 0.98 / peak if peak > 0.98 else 1.0
+    sf.write(out / "mix.wav", mixed * limit, rate, subtype="PCM_16")
+    (out / "mix.json").write_text(json.dumps({"gain_db": round(20 * np.log10(gain), 1), "limit_db": round(20 * np.log10(limit), 1), "seconds": round(len(instr) / rate, 2)}))
+
+
 def main() -> None:
     src, out, parts = pathlib.Path(sys.argv[1]), pathlib.Path(sys.argv[2]), sys.argv[3]
+    if parts == "mix":
+        mix(src, out, sys.argv[4], sys.argv[5])
+        return
     wav, rate = sf.read(src, dtype="float32", always_2d=True)
     if wav.shape[1] == 1:
         wav = np.repeat(wav, 2, axis=1)

@@ -119,6 +119,8 @@ body.studio input[type=range]:not(#stSeek):focus-visible { outline: 2px solid va
 .st-vm.err .m { color: var(--error); }
 .st-vm button { background: none; border: 1px solid transparent; border-radius: 4px; color: var(--text-3); width: 28px; height: 28px; padding: 0; }
 .st-vm button:hover { color: var(--error); border-color: var(--error-a50); }
+.st-vm button.ref { width: auto; padding: 0 9px; border-color: var(--line-strong); }
+.st-vm button.ref:hover { color: var(--text); border-color: var(--line-hover); }
 .st-vm label { display: flex; align-items: center; gap: 8px; min-width: 0; }
 .st-vm label span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .st-vmrow { display: flex; gap: 8px; margin-top: 6px; flex-wrap: wrap; }
